@@ -92,8 +92,11 @@ input[type=checkbox]{width:auto;accent-color:var(--gold);cursor:pointer}
 .add-block:hover{border-color:var(--gold);color:var(--gold)}
 
 /* ─── Pattern vis ─── */
-.pvis{background:var(--bg);border-radius:4px;padding:7px;overflow-x:auto;margin:7px 0}
-.pcells{display:flex;flex-wrap:wrap;gap:2px}
+.pvis{background:var(--bg);border-radius:4px;padding:7px 7px 4px;overflow-x:auto;margin:7px 0;scrollbar-width:thin;scrollbar-color:var(--gold) var(--panel2)}
+.pvis::-webkit-scrollbar{height:8px}
+.pvis::-webkit-scrollbar-thumb{background:var(--gold);border-radius:4px}
+.pvis::-webkit-scrollbar-track{background:var(--panel2)}
+.pcells{display:flex;flex-wrap:nowrap;gap:2px;width:max-content}
 .pc{width:17px;height:22px;display:inline-flex;align-items:center;justify-content:center;border-radius:2px;font-size:8px;font-weight:600;flex-shrink:0;cursor:default}
 .pc-D,.pc-S{background:var(--day-bg);color:var(--day-text);border:1px solid var(--day-bd)}
 .pc-N{background:var(--night-bg);color:var(--night-text);border:1px solid var(--night-bd)}
@@ -1497,16 +1500,26 @@ function buildCard(r,idx){
     </div>`;
   }).join('');
 
-  // Pattern vis
-  const cells=pattern.slice(0,42).map((c,i)=>{
-    const cl=['D','S'].includes(c)?'pc-D':c==='N'?'pc-N':c==='O'?'pc-O':'pc-?';
-    return `<div class="pc ${cl}" title="Day ${i+1}: ${SHIFT_LABELS[c]||c}">${c}</div>`;
-  }).join('')+(pattern.length>42?`<span style="font-size:9px;color:var(--muted);margin-left:3px">+${pattern.length-42}</span>`:'');
+  // Pattern vis — repeat a couple of full cycles so the rotation's repeat is
+  // visible; the strip scrolls horizontally (.pvis) when wider than the card.
+  const pn = pattern.length;
+  let patCycles = pn ? Math.max(2, Math.round(42/pn)) : 1;
+  while (patCycles > 2 && pn * patCycles > 120) patCycles--;
+  let cells = '';
+  for (let k = 0; k < patCycles; k++) {
+    for (let i = 0; i < pn; i++) {
+      const c = pattern[i];
+      const cl=['D','S'].includes(c)?'pc-D':c==='N'?'pc-N':c==='O'?'pc-O':'pc-?';
+      const div = (k>0 && i===0) ? 'border-left:2px solid var(--gold)' : '';
+      cells += `<div class="pc ${cl}"${div?` style="${div}"`:''} title="Cycle ${k+1} Day ${i+1}: ${SHIFT_LABELS[c]||c}">${c}</div>`;
+    }
+  }
 
   const patCounts=pattern.length?`<span style="color:var(--day-text)">D/S: ${pattern.filter(c=>['D','S'].includes(c)).length}</span>
     <span style="color:var(--night-text)">N: ${pattern.filter(c=>c==='N').length}</span>
     <span style="color:var(--off-text)">Off: ${pattern.filter(c=>c==='O').length}</span>
-    <span style="color:var(--muted)">${pattern.length}-day cycle</span>`:
+    <span style="color:var(--muted)">${pattern.length}-day cycle</span>
+    <span style="color:var(--gold)">${patCycles} cycles shown · scroll →</span>`:
     `<span style="color:var(--dim)">No blocks yet</span>`;
 
   // Coverage check — always compute when we have a pattern and crews
