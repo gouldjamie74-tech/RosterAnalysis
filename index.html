@@ -161,7 +161,10 @@ input[type=checkbox]{width:auto;accent-color:var(--gold);cursor:pointer}
 .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 @media(max-width:900px){.charts-row{grid-template-columns:1fr}}
 /* Heatmap */
-.heatmap-scroll{overflow-x:auto}
+.heatmap-scroll{overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;scrollbar-color:var(--gold) var(--panel2)}
+.heatmap-scroll::-webkit-scrollbar{height:8px}
+.heatmap-scroll::-webkit-scrollbar-thumb{background:var(--gold);border-radius:4px}
+.heatmap-scroll::-webkit-scrollbar-track{background:var(--panel2)}
 .heatmap{display:inline-flex;flex-direction:column;gap:3px;min-width:100%}
 .hmap-row{display:flex;align-items:center;gap:3px}
 .hmap-crew{font-size:10px;color:var(--muted);width:52px;flex-shrink:0;font-family:var(--font-sans);text-align:right;padding-right:6px}
@@ -1939,7 +1942,7 @@ function renderResults(){
     html += `<div class="chart-wrap" style="margin-bottom:14px">
       <div class="chart-hdr">
         <span style="color:${col}">⬛ Crew Rotation — ${name}</span>
-        <span class="chart-sub">${result.crews} crews · ${result.cycleLen}-day cycle · each row = one crew's schedule</span>
+        <span class="chart-sub">${result.crews} crews · ${result.cycleLen}-day cycle · each row = one crew · scrolls → across repeated cycles</span>
       </div>
       <div class="chart-body">
         <div class="heatmap-scroll"><div class="heatmap" id="hmap-${i}"></div></div>
@@ -2333,14 +2336,20 @@ function renderCharts(actives) {
     const n = pattern.length;
     const crews = r.crews;
     const offset = n / crews;
-    const showDays = Math.min(n, 56);
+    // Render a couple of full cycles so the rotation's repeat is visible.
+    // Short cycles get more repeats to fill ~6 weeks; the grid scrolls
+    // horizontally (.heatmap-scroll) whenever it's wider than the card.
+    let showCycles = Math.max(2, Math.round(42 / n));            // ≥2 whole cycles
+    while (showCycles > 2 && n * showCycles > 120) showCycles--; // cap DOM for very short cycles
+    const showDays = n * showCycles;
+    const cycStart = d => d > 0 && d % n === 0;                  // first day of a repeat
 
-    // Day number header
+    // Day number header (continuous 1…N; gold divider marks each new cycle)
     let html = `<div class="hmap-row"><div class="hmap-crew"></div><div class="hmap-cells">`;
     for (let d = 0; d < showDays; d++) {
-      html += `<div class="hmap-day">${d+1}</div>`;
+      html += `<div class="hmap-day"${cycStart(d)?' style="border-left:2px solid var(--gold)"':''}>${d+1}</div>`;
     }
-    html += (n > showDays ? `<div class="hmap-day" style="color:var(--dim)">…</div>` : '') + `</div></div>`;
+    html += `</div></div>`;
 
     // Each crew row
     for (let c = 0; c < crews; c++) {
@@ -2353,16 +2362,16 @@ function renderCharts(actives) {
         const bg = isDay?'#78350f':isNight?'#2e1065':'#1f2937';
         const col = isDay?'#fcd34d':isNight?'#c4b5fd':'#4b5563';
         const bd = isDay?'1px solid #92400e':isNight?'1px solid #4c1d95':'1px solid #374151';
-        html += `<div class="hmap-cell" style="background:${bg};color:${col};border:${bd}" title="Crew ${String.fromCharCode(65+c)}, Day ${d+1}: ${SHIFT_LABELS[sh]||sh}">${sh}</div>`;
+        const div = cycStart(d) ? 'border-left:2px solid var(--gold);' : '';
+        html += `<div class="hmap-cell" style="background:${bg};color:${col};border:${bd};${div}" title="Crew ${String.fromCharCode(65+c)}, Cycle ${Math.floor(d/n)+1} Day ${idx+1}: ${SHIFT_LABELS[sh]||sh}">${sh}</div>`;
       }
-      if (n > showDays) html += `<div class="hmap-cell" style="background:transparent;color:var(--dim)">…</div>`;
       html += `</div></div>`;
     }
     html += `<div class="hmap-legend">
       <span><span class="hmap-leg-dot" style="background:#78350f;border:1px solid #92400e"></span>Day</span>
       <span><span class="hmap-leg-dot" style="background:#2e1065;border:1px solid #4c1d95"></span>Night</span>
       <span><span class="hmap-leg-dot" style="background:#1f2937;border:1px solid #374151"></span>Off</span>
-      <span style="margin-left:8px;color:var(--dim)">Offset: ${offset.toFixed(1)} days between crews</span>
+      <span style="margin-left:8px;color:var(--dim)">Showing ${showCycles} cycles · offset ${offset.toFixed(1)} days between crews · scroll → for more</span>
     </div>`;
     el.innerHTML = html;
   });
