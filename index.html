@@ -1,0 +1,3064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roster Analyser v3 — Toka Tindung Gold Mine</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--panel:#161b22;--panel2:#1c2128;--panel3:#21262d;
+  --border:#21262d;--border2:#30363d;--border3:#484f58;
+  --gold:#c9a227;--gold-bg:#1a1508;
+  --text:#e6edf3;--muted:#7d8590;--dim:#484f58;
+  --day-bg:#78350f;--day-text:#fcd34d;--day-bd:#92400e;
+  --night-bg:#2e1065;--night-text:#c4b5fd;--night-bd:#4c1d95;
+  --off-bg:#1f2937;--off-text:#6b7280;--off-bd:#374151;
+  --swing-bg:#14302a;--swing-text:#6ee7b7;--swing-bd:#0f5132;
+  --green:#3fb950;--red:#f85149;--amber:#f59e0b;--blue:#58a6ff;--purple:#a78bfa;
+  --r1:#c9a227;--r2:#58a6ff;--r3:#3fb950;
+  --font-mono:'IBM Plex Mono',monospace;
+  --font-sans:'IBM Plex Sans',sans-serif;
+}
+html{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-size:13px;line-height:1.5}
+body{min-height:100vh}
+
+/* ─── Header ─── */
+.hdr{border-bottom:1px solid var(--border);padding:12px 22px;display:flex;align-items:center;justify-content:space-between;background:var(--panel);position:sticky;top:0;z-index:200}
+.hdr-mine{font-size:11px;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px;font-family:var(--font-sans)}
+.hdr-title{font-family:var(--font-sans);font-size:16px;font-weight:700}
+.tabs{display:flex;gap:4px}
+.tab-btn{padding:6px 13px;border-radius:5px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:var(--font-mono);font-size:11px;font-weight:500;transition:all .15s}
+.tab-btn.active{background:var(--gold);color:#000;border-color:var(--gold);font-weight:600}
+.tab-btn:not(.active):hover{color:var(--text)}
+
+/* ─── Panes ─── */
+.pane{display:none;padding:16px 20px}
+.pane.active{display:block}
+
+/* ─── Collapsible ─── */
+.collap{background:var(--panel);border:1px solid var(--border);border-radius:8px;margin-bottom:14px;overflow:hidden}
+.collap-hdr{padding:10px 15px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none}
+.collap-hdr:hover{background:var(--panel2)}
+.collap-title{font-weight:600;color:var(--gold);font-size:12px}
+.collap-arr{color:var(--muted);font-size:10px;transition:transform .2s}
+.collap-arr.open{transform:rotate(180deg)}
+.collap-body{display:none;padding:13px 15px 15px;border-top:1px solid var(--border)}
+.collap-body.open{display:block}
+
+/* ─── Labels & inputs ─── */
+.lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;font-family:var(--font-sans)}
+.sublbl{font-size:10px;color:var(--dim);font-family:var(--font-sans);margin-top:3px}
+input[type=text],input[type=number],input[type=password],input[type=time],select{
+  width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border2);border-radius:5px;
+  padding:6px 9px;font-family:var(--font-mono);font-size:12px;transition:border-color .15s;
+  -webkit-appearance:none;appearance:none;
+}
+input:focus,select:focus{outline:none;border-color:var(--gold)}
+input[type=time]{font-size:12px}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237d8590'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:22px}
+input[type=checkbox]{width:auto;accent-color:var(--gold);cursor:pointer}
+.toggle-row{display:flex;align-items:center;gap:7px;cursor:pointer;font-family:var(--font-sans);font-size:12px;color:var(--muted)}
+
+/* ─── Grids ─── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.gauto{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:9px}
+.gauto-lg{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:13px}
+
+/* ─── Roster cards ─── */
+.roster-card{background:var(--panel);border-radius:8px;overflow:hidden;border:1px solid var(--border);transition:border-color .2s}
+.rc-en-0.arc{border-color:var(--r1)}.rc-en-1.arc{border-color:var(--r2)}.rc-en-2.arc{border-color:var(--r3)}
+.rc-hdr{padding:9px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.rc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot-0{background:var(--r1)}.dot-1{background:var(--r2)}.dot-2{background:var(--r3)}.dot-off{background:var(--dim)}
+.rc-name{flex:1;background:transparent;border:none;font-size:13px;font-weight:600;color:var(--text);font-family:var(--font-mono);padding:0}
+.rc-name:focus{outline:none;color:var(--gold)}
+.rc-name::placeholder{color:var(--dim)}
+.rc-body{padding:12px}
+
+/* ─── Block builder ─── */
+.block-list{display:flex;flex-direction:column;gap:5px;margin-bottom:8px}
+.block-row{display:flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:5px 7px}
+.block-row select{width:105px;font-size:11px;padding:4px 5px}
+.block-row input[type=number]{width:48px;font-size:11px;padding:4px 5px;text-align:center}
+.block-dl{font-size:10px;color:var(--muted);white-space:nowrap}
+.block-del{background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:13px;padding:1px 3px;line-height:1;transition:color .15s;margin-left:auto}
+.block-del:hover{color:var(--red)}
+.block-mv{background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:10px;padding:2px 2px;line-height:1}
+.block-mv:hover{color:var(--text)}
+.add-block{width:100%;padding:6px;border:1px dashed var(--border2);background:transparent;color:var(--muted);border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-size:11px;transition:all .15s}
+.add-block:hover{border-color:var(--gold);color:var(--gold)}
+
+/* ─── Pattern vis ─── */
+.pvis{background:var(--bg);border-radius:4px;padding:7px;overflow-x:auto;margin:7px 0}
+.pcells{display:flex;flex-wrap:wrap;gap:2px}
+.pc{width:17px;height:22px;display:inline-flex;align-items:center;justify-content:center;border-radius:2px;font-size:8px;font-weight:600;flex-shrink:0;cursor:default}
+.pc-D,.pc-S{background:var(--day-bg);color:var(--day-text);border:1px solid var(--day-bd)}
+.pc-N{background:var(--night-bg);color:var(--night-text);border:1px solid var(--night-bd)}
+.pc-O{background:var(--off-bg);color:var(--off-text);border:1px solid var(--off-bd)}
+.pc-?{background:#1a1a1a;color:var(--dim);border:1px solid #222}
+.plegend{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px;font-size:10px;color:var(--muted);font-family:var(--font-sans)}
+
+/* ─── Shift times section ─── */
+.shift-times-panel{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 11px;margin:10px 0}
+.stp-title{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--gold);font-weight:600;margin-bottom:8px;font-family:var(--font-sans)}
+.shift-type-row{display:grid;grid-template-columns:70px 1fr 1fr auto;gap:6px;align-items:center;margin-bottom:7px}
+.stype-badge{
+  font-size:10px;font-weight:600;padding:3px 6px;border-radius:3px;text-align:center;
+  font-family:var(--font-mono);
+}
+.stype-D{background:var(--day-bg);color:var(--day-text)}
+.stype-N{background:var(--night-bg);color:var(--night-text)}
+.stype-S{background:var(--swing-bg);color:var(--swing-text)}
+.shift-derived{font-size:11px;color:var(--muted);white-space:nowrap;font-family:var(--font-sans);padding-left:4px}
+.shift-derived span{font-weight:600}
+.time-label{font-size:9px;color:var(--dim);text-align:center;margin-top:2px;font-family:var(--font-sans)}
+
+/* ─── Break/travel row ─── */
+.bt-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.input-unit-row{display:flex;align-items:center;gap:5px}
+.input-unit-row input{flex:1}
+.unit-label{font-size:11px;color:var(--muted);white-space:nowrap;font-family:var(--font-sans)}
+
+/* ─── Recovery metrics ─── */
+.recovery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;margin-top:10px}
+.rec-card{border-radius:4px;padding:7px 9px;border:1px solid}
+.rec-ok{background:#0d2318;border-color:#1a4a2e}
+.rec-warn{background:#2d2015;border-color:#7c2d12}
+.rec-bad{background:#2d1515;border-color:#7f1d1d}
+.rec-type{font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-family:var(--font-sans);margin-bottom:3px}
+.rec-val{font-size:14px;font-weight:600;margin-bottom:1px}
+.rec-detail{font-size:10px;color:var(--muted);font-family:var(--font-sans)}
+.commute-summary{margin-top:8px;padding:7px 9px;background:var(--panel2);border-radius:4px;font-size:11px;color:var(--muted);font-family:var(--font-sans)}
+.cs-val{color:var(--blue);font-weight:600;font-family:var(--font-mono)}
+.travel-note{font-size:10px;color:var(--dim);font-family:var(--font-sans);font-style:italic;margin-top:4px}
+/* ─── Grade matrix ─── */
+.grade-setup-table{width:100%;border-collapse:collapse;font-size:12px}
+.grade-setup-table th{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500;font-family:var(--font-sans);padding:5px 8px;border-bottom:1px solid var(--border);text-align:left}
+.grade-setup-table td{padding:4px 5px;border-bottom:1px solid var(--border)}
+.grade-setup-table tr:last-child td{border-bottom:none}
+.grade-setup-table input{font-size:11px;padding:4px 7px}
+.grade-del{background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:13px;padding:2px 4px;transition:color .15s}
+.grade-del:hover{color:var(--red)}
+.grade-derived{font-size:10px;color:var(--gold);font-family:var(--font-mono);padding:0 4px;white-space:nowrap}
+.crew-matrix{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px}
+.crew-matrix th{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:500;font-family:var(--font-sans);padding:4px 8px;border-bottom:1px solid var(--border);text-align:left}
+.crew-matrix td{padding:4px 7px;border-bottom:1px solid var(--border)}
+.crew-matrix tr:last-child td{border-bottom:none}
+.crew-matrix input{width:60px;font-size:11px;padding:3px 5px;text-align:center}
+.crew-matrix tfoot td{font-weight:600;color:var(--text);border-top:2px solid var(--border2)}
+.grade-cost-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px}
+.grade-cost-table th{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:500;font-family:var(--font-sans);padding:4px 8px;border-bottom:1px solid var(--border);text-align:left}
+.grade-cost-table td{padding:5px 8px;border-bottom:1px solid var(--border)}
+.grade-cost-table tfoot td{font-weight:600;border-top:2px solid var(--border2);color:var(--gold)}
+.no-grades-note{font-size:11px;color:var(--muted);font-family:var(--font-sans);font-style:italic;padding:6px 0}
+.chart-wrap{background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px}
+.chart-hdr{padding:10px 15px;border-bottom:1px solid var(--border);font-weight:600;color:var(--gold);font-size:12px;display:flex;align-items:center;justify-content:space-between}
+.chart-body{padding:14px 15px}
+.chart-sub{font-size:10px;color:var(--muted);font-family:var(--font-sans)}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:900px){.charts-row{grid-template-columns:1fr}}
+/* Heatmap */
+.heatmap-scroll{overflow-x:auto}
+.heatmap{display:inline-flex;flex-direction:column;gap:3px;min-width:100%}
+.hmap-row{display:flex;align-items:center;gap:3px}
+.hmap-crew{font-size:10px;color:var(--muted);width:52px;flex-shrink:0;font-family:var(--font-sans);text-align:right;padding-right:6px}
+.hmap-cells{display:flex;gap:2px}
+.hmap-cell{width:18px;height:22px;border-radius:2px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;cursor:default}
+.hmap-day{width:18px;height:14px;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--dim);flex-shrink:0}
+.hmap-legend{display:flex;gap:12px;margin-top:8px;font-size:10px;color:var(--muted);font-family:var(--font-sans)}
+.hmap-leg-dot{width:12px;height:12px;border-radius:2px;display:inline-block;margin-right:4px}
+/* Canvas wrappers */
+.canvas-wrap{position:relative;width:100%}
+.cov-ok{background:#0d2318;border:1px solid #1a4a2e;border-radius:5px;padding:8px 11px;margin-top:8px}
+.cov-warn{background:#2d2015;border:1px solid #7c2d12;border-radius:5px;padding:8px 11px;margin-top:8px}
+.cov-bad{background:#2d1515;border:1px solid #7f1d1d;border-radius:5px;padding:8px 11px;margin-top:8px}
+.cov-title{font-size:11px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.cov-detail{font-size:10px;color:var(--muted);font-family:var(--font-sans);line-height:1.6}
+.cov-gap-label{color:var(--amber);font-weight:500}.cov-gap-bad{color:var(--red);font-weight:500}
+.cov-offset-warn{font-size:10px;color:var(--amber);font-family:var(--font-sans);margin-top:3px;font-style:italic}
+
+/* ─── Quick stats ─── */
+.qs-box{background:var(--bg);border-radius:5px;padding:9px 11px;margin-top:10px}
+.qs-title{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:7px}
+.qs-g{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.qsl{font-size:10px;color:var(--muted)}.qsv{font-size:12px;font-weight:600}
+
+/* ─── Buttons ─── */
+.btn{display:inline-flex;align-items:center;gap:5px;cursor:pointer;border:1px solid var(--border2);border-radius:5px;padding:7px 14px;background:transparent;color:var(--muted);font-family:var(--font-mono);font-size:11px;transition:all .15s}
+.btn:hover{color:var(--text)}
+.btn-gold{background:var(--gold);color:#000;border-color:var(--gold);font-weight:600}
+.btn-gold:hover{background:#b8901e;border-color:#b8901e}
+
+/* ─── Results ─── */
+.cmp-wrap{background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px}
+.cmp-hdr{padding:10px 15px;border-bottom:1px solid var(--border);font-weight:600;color:var(--gold);font-size:12px}
+.tscroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:400px}
+th{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500;font-family:var(--font-sans);padding:8px 11px;border-bottom:1px solid var(--border);text-align:left}
+td{padding:8px 11px;border-bottom:1px solid var(--border);font-size:12px}
+tr:last-child td{border-bottom:none}
+.best{color:var(--green);font-weight:600}
+.badge-best{font-size:9px;background:#0d2b1a;color:var(--green);padding:1px 4px;border-radius:3px;border:1px solid #1a4a2e;margin-left:4px}
+.fH{color:var(--red);font-weight:600}.fM{color:var(--amber);font-weight:600}.fL{color:var(--green);font-weight:600}
+.section-group{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);font-family:var(--font-sans);padding:6px 11px 2px;border-bottom:1px solid var(--border)}
+
+/* ─── Cost cards ─── */
+.cost-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(295px,1fr));gap:13px;margin-bottom:14px}
+.cost-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.cc-hdr{padding:10px 13px;border-bottom:1px solid var(--border)}
+.cc-name{font-weight:700;font-size:13px}.cc-sub{font-size:10px;color:var(--muted);margin-top:2px;font-family:var(--font-sans)}
+.cc-body{padding:12px 13px}
+.cost-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px}
+.cost-row:last-child{border-bottom:none}
+.crl{color:var(--muted);font-family:var(--font-sans)}.crv{font-weight:500}
+.cost-total{display:flex;justify-content:space-between;align-items:center;padding:8px 0 4px;border-top:1px solid var(--border2);margin-top:3px}
+.ctlbl{font-size:10px;color:var(--muted);font-family:var(--font-sans);text-transform:uppercase}
+.ctval{font-size:14px;font-weight:600}
+.bar-bg{background:var(--border);border-radius:2px;height:4px;overflow:hidden;margin:2px 0 5px}
+.bar-fill{height:100%;border-radius:2px}
+
+/* ─── Fatigue block ─── */
+.fat-block{margin-top:11px;padding:10px 11px;border-radius:5px}
+.fat-HIGH{background:#2d1515;border:1px solid #7f1d1d}
+.fat-MEDIUM{background:#2d2015;border:1px solid #7c2d12}
+.fat-LOW{background:#152d1d;border:1px solid #14532d}
+.fat-badge{font-size:16px;font-weight:700}.fat-detail{font-size:10px;color:var(--muted);font-family:var(--font-sans)}
+
+/* ─── AI panel ─── */
+.ai-panel{background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px}
+.ai-hdr{padding:10px 15px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.ai-hdr-left{font-weight:600;color:var(--purple);font-size:12px}
+.ai-body{padding:13px 15px}
+.ai-key-row{display:flex;gap:7px;align-items:center;margin-bottom:10px}
+.ai-key-row input{flex:1;font-size:11px}
+.ai-roster-sel{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+.ai-sel-btn{padding:4px 11px;border:1px solid var(--border2);border-radius:4px;background:transparent;color:var(--muted);cursor:pointer;font-family:var(--font-mono);font-size:11px}
+.ai-sel-btn.selected{border-color:var(--purple);color:var(--purple);background:#1a0f2e}
+.ai-output{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:11px;min-height:80px;font-size:12px;line-height:1.75;color:var(--text);font-family:var(--font-sans)}
+.ai-loading{color:var(--muted);font-style:italic}
+
+/* ─── Law / benchmarks ─── */
+.law-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:11px;margin-bottom:14px}
+.law-card{background:var(--panel2);border:1px solid var(--border);border-radius:7px;padding:11px 13px}
+.law-card h3{font-size:12px;font-weight:600;color:var(--gold);margin-bottom:7px;font-family:var(--font-sans)}
+.law-item{font-size:11px;color:var(--muted);font-family:var(--font-sans);padding:3px 0;border-bottom:1px solid var(--border)}
+.law-item:last-child{border-bottom:none}
+.law-val{float:right;color:var(--text);font-weight:500;font-family:var(--font-mono)}
+.bm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:10px;margin-bottom:14px}
+.bm-card{background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:10px 12px}
+.bm-name{font-weight:600;font-size:12px;margin-bottom:3px}.bm-pat{font-size:10px;color:var(--gold);letter-spacing:.1em;margin-bottom:5px}
+.bm-stat{font-size:10px;color:var(--muted);font-family:var(--font-sans)}
+
+/* ─── Save / Load bar ─── */
+.save-bar{
+  background:var(--panel2);border-bottom:1px solid var(--border);
+  padding:7px 22px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+.save-bar-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-family:var(--font-sans);margin-right:4px}
+.scenario-slot{
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--bg);border:1px solid var(--border2);border-radius:5px;
+  padding:4px 9px;cursor:pointer;font-family:var(--font-mono);font-size:11px;color:var(--muted);
+  transition:all .15s;position:relative;
+}
+.scenario-slot:hover{border-color:var(--gold);color:var(--text)}
+.scenario-slot.active-slot{border-color:var(--gold);color:var(--gold);background:var(--gold-bg)}
+.scenario-slot.has-data{color:var(--text)}
+.scenario-slot.has-data::after{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);position:absolute;top:3px;right:3px}
+.slot-del{background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:12px;padding:0 0 0 3px;line-height:1}
+.slot-del:hover{color:var(--red)}
+.save-btn{
+  padding:4px 11px;border:1px solid var(--green);border-radius:5px;
+  background:transparent;color:var(--green);font-family:var(--font-mono);font-size:11px;
+  cursor:pointer;transition:all .15s;
+}
+.save-btn:hover{background:#0d2318}
+.io-btn{
+  padding:4px 11px;border:1px solid var(--border2);border-radius:5px;
+  background:transparent;color:var(--muted);font-family:var(--font-mono);font-size:11px;
+  cursor:pointer;transition:all .15s;
+}
+.io-btn:hover{color:var(--text);border-color:var(--border3)}
+.save-status{font-size:10px;color:var(--muted);font-family:var(--font-sans);font-style:italic;margin-left:4px}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--panel);border:1px solid var(--border2);border-radius:9px;padding:20px;width:340px;max-width:95vw}
+.modal-title{font-weight:600;font-size:14px;margin-bottom:14px;color:var(--gold)}
+.modal-input{width:100%;margin-bottom:12px}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end}
+.section-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--gold);font-weight:600;margin-bottom:9px;margin-top:16px}
+.section-lbl:first-child{margin-top:0}
+.empty-state{padding:40px;text-align:center;color:var(--muted)}
+.warn{background:#2d2015;border:1px solid #7c2d12;border-radius:4px;padding:5px 9px;font-size:10px;color:var(--amber);font-family:var(--font-sans);margin-top:5px}
+.info-box{background:#0f1a2e;border:1px solid #1a3a6b;border-radius:4px;padding:7px 10px;font-size:11px;color:#7eb8f7;font-family:var(--font-sans);margin-bottom:11px}
+.divider{height:1px;background:var(--border);margin:11px 0}
+.mt8{margin-top:8px}.mt10{margin-top:10px}.mt14{margin-top:14px}
+/* ─── Pay Calculator ─── */
+.pay-layout{display:grid;grid-template-columns:380px 1fr;gap:18px;align-items:start}
+@media(max-width:900px){.pay-layout{grid-template-columns:1fr}}
+.pay-inputs{background:var(--panel);border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.pay-inputs-hdr{padding:11px 15px;border-bottom:1px solid var(--border);font-weight:600;color:var(--gold);font-size:12px}
+.pay-inputs-body{padding:14px 15px}
+.pay-section{margin-bottom:14px}
+.pay-section-title{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--purple);font-weight:600;margin-bottom:8px;font-family:var(--font-sans)}
+.band-picker{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.band-btn{
+  padding:4px 10px;border:1px solid var(--border2);border-radius:4px;
+  background:transparent;color:var(--muted);font-family:var(--font-mono);font-size:11px;
+  cursor:pointer;transition:all .15s;
+}
+.band-btn:hover{border-color:var(--gold);color:var(--text)}
+.band-btn.active{background:var(--gold);color:#000;border-color:var(--gold);font-weight:600}
+.salary-slider-wrap{margin:8px 0}
+.salary-slider-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-family:var(--font-sans);margin-bottom:3px}
+input[type=range]{width:100%;accent-color:var(--gold)}
+.ot-toggle-row{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--bg);border:1px solid var(--border2);border-radius:5px;
+  padding:7px 10px;margin-bottom:8px;
+}
+.ot-toggle-label{font-size:12px;font-family:var(--font-sans);color:var(--text)}
+.ot-toggle-sub{font-size:10px;color:var(--muted);font-family:var(--font-sans);margin-top:1px}
+.toggle-switch{position:relative;width:36px;height:20px;flex-shrink:0}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-knob{
+  position:absolute;inset:0;border-radius:20px;background:var(--border3);
+  cursor:pointer;transition:background .2s;
+}
+.toggle-knob:before{
+  content:'';position:absolute;width:14px;height:14px;border-radius:50%;
+  background:#fff;left:3px;top:3px;transition:transform .2s;
+}
+.toggle-switch input:checked + .toggle-knob{background:var(--gold)}
+.toggle-switch input:checked + .toggle-knob:before{transform:translateX(16px)}
+.allow-row{display:flex;gap:6px;align-items:center;margin-bottom:5px}
+.allow-row input[type=text]{flex:1;font-size:11px}
+.allow-row input[type=number]{width:110px;font-size:11px}
+.allow-del{background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:13px;padding:0 3px}
+.allow-del:hover{color:var(--red)}
+/* Payslip */
+.payslip{background:var(--panel);border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.payslip-hdr{padding:14px 18px;border-bottom:1px solid var(--border);background:var(--panel2)}
+.payslip-name{font-size:15px;font-weight:700;color:var(--text)}
+.payslip-meta{font-size:11px;color:var(--muted);font-family:var(--font-sans);margin-top:2px}
+.payslip-body{padding:16px 18px}
+.payslip-section{margin-bottom:14px}
+.payslip-section-title{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:500;font-family:var(--font-sans);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.payslip-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px}
+.payslip-label{color:var(--muted);font-family:var(--font-sans)}
+.payslip-value{font-weight:500;font-family:var(--font-mono)}
+.payslip-total-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:2px solid var(--border2);margin-top:4px}
+.payslip-total-label{font-size:11px;color:var(--muted);font-family:var(--font-sans);text-transform:uppercase}
+.payslip-total-value{font-size:16px;font-weight:700}
+.payslip-net-box{background:var(--panel2);border-radius:7px;padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.payslip-net-item .pn-label{font-size:10px;color:var(--muted);font-family:var(--font-sans);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.payslip-net-item .pn-value{font-size:18px;font-weight:700;color:var(--green)}
+.payslip-employer-box{background:#0d1e2e;border:1px solid #1a3a5c;border-radius:6px;padding:10px 13px;margin-top:10px}
+.ptkp-note{font-size:10px;color:var(--dim);font-family:var(--font-sans);font-style:italic;margin-top:8px}
+@media print{
+  .hdr,.save-bar,.tabs,.pane:not(#pane-pay){display:none!important}
+  #pane-pay{display:block!important;padding:0}
+  .pay-inputs{display:none}
+  .pay-layout{grid-template-columns:1fr}
+  .payslip{border:1px solid #ccc;border-radius:0}
+  body{background:#fff;color:#000}
+}
+/* ─── Password lock ─── */
+.locked-tab{opacity:.45;cursor:pointer;position:relative}
+.locked-tab::after{content:'🔒';font-size:10px;margin-left:4px}
+.lock-gate{
+  background:var(--panel2);border:1px solid var(--border);border-radius:8px;
+  padding:28px;text-align:center;margin:0 auto;max-width:360px;margin-top:40px;
+}
+.lock-gate-icon{font-size:28px;margin-bottom:10px}
+.lock-gate-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:5px}
+.lock-gate-sub{font-size:11px;color:var(--muted);font-family:var(--font-sans);margin-bottom:16px}
+.lock-gate input{max-width:240px;text-align:center;font-size:13px;margin-bottom:10px;letter-spacing:.1em}
+.lock-gate-btn{padding:7px 22px;background:var(--gold);color:#000;border:none;border-radius:5px;font-family:var(--font-mono);font-size:12px;font-weight:600;cursor:pointer}
+.lock-gate-err{font-size:11px;color:var(--red);font-family:var(--font-sans);margin-top:6px;height:16px}
+.unlock-badge{font-size:10px;background:#0d2318;color:var(--green);border:1px solid #1a4a2e;border-radius:3px;padding:2px 6px;margin-left:5px;cursor:pointer}
+.unlock-badge:hover{background:#152d1d}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div>
+    <div class="hdr-mine">⛏ Toka Tindung Gold Mine · Process Operations</div>
+    <div class="hdr-title">Roster Cost &amp; Fatigue Analyser v3</div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('config')">⚙ Configure</button>
+    <button class="tab-btn" id="tab-results" onclick="switchTab('results')">📊 Results</button>
+    <button class="tab-btn locked-tab" id="tab-pay" onclick="requireAuth('pay')">👤 Pay Calculator</button>
+    <button class="tab-btn" onclick="switchTab('law')">⚖ Law &amp; Benchmarks</button>
+  </div>
+</div>
+
+<!-- SAVE / LOAD BAR -->
+<div class="save-bar">
+  <span class="save-bar-label">Scenarios</span>
+  <div id="slot-btns" style="display:flex;gap:5px;flex-wrap:wrap"></div>
+  <button class="save-btn" onclick="saveToSlot()">💾 Save</button>
+  <div style="width:1px;background:var(--border);height:18px;margin:0 2px"></div>
+  <button class="io-btn" onclick="exportJSON()">↓ Export</button>
+  <button class="io-btn" onclick="document.getElementById('import-file').click()">↑ Import</button>
+  <input type="file" id="import-file" accept=".json" style="display:none" onchange="importJSON(this)">
+  <span class="save-status" id="save-status"></span>
+</div>
+
+<!-- NAME MODAL -->
+<div class="modal-overlay" id="name-modal">
+  <div class="modal-box">
+    <div class="modal-title">Name this scenario</div>
+    <input type="text" class="modal-input" id="modal-name" placeholder="e.g. Modified Toka 28-Day" maxlength="40">
+    <div class="modal-btns">
+      <button class="io-btn" onclick="closeModal()">Cancel</button>
+      <button class="save-btn" onclick="confirmSave()">Save →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CONFIGURE PANE ═══ -->
+<div class="pane active" id="pane-config">
+
+  <!-- Wage Settings -->
+  <div class="collap">
+    <div class="collap-hdr" onclick="toggleSection('wage')">
+      <div class="collap-title">💰 Wage &amp; Indonesian Labour Law Settings (PP 35/2021)</div>
+      <div class="collap-arr" id="arr-wage">▼</div>
+    </div>
+    <div class="collap-body" id="body-wage">
+      <div class="info-box">Hourly rate = Monthly Salary ÷ 173 (statutory divisor). Paid hours per shift = gross shift hours − unpaid break. Overtime threshold is standard daily hours (7 or 8 depending on work week type).</div>
+      <div class="gauto" style="margin-bottom:12px">
+        <div>
+          <div class="lbl">Currency</div>
+          <select id="w-currency" onchange="updateWage('currency',this.value)">
+            <option value="IDR">IDR — Indonesian Rupiah</option>
+            <option value="AUD">AUD — Australian Dollar</option>
+            <option value="USD">USD — US Dollar</option>
+          </select>
+        </div>
+        <div>
+          <div class="lbl">Monthly Salary (Base + Fixed Allow.)</div>
+          <input type="number" id="w-monthly" value="8000000" min="0" step="100000" oninput="syncHourly()">
+        </div>
+        <div>
+          <div class="lbl">Derived Hourly Rate (÷173)</div>
+          <input type="number" id="w-hourly" value="46243" readonly style="color:var(--gold)">
+          <div class="sublbl">Used for all OT calculations</div>
+        </div>
+        <div>
+          <div class="lbl">Work Week Standard</div>
+          <select id="w-workweek" onchange="updateWage('workWeekDays',+this.value);updateOTDisplay()">
+            <option value="5">5-day week (8 hrs/day standard)</option>
+            <option value="6">6-day week (7 hrs/day standard)</option>
+          </select>
+        </div>
+      </div>
+      <div class="g2" style="margin-bottom:12px">
+        <div style="background:var(--bg);border-radius:5px;padding:9px">
+          <div style="font-size:11px;color:var(--blue);font-weight:600;margin-bottom:5px">Weekday Shift OT (PP 35/2021)</div>
+          <table class="ot-table">
+            <tr><th>Hours</th><th>Rate</th></tr>
+            <tr><td id="ot-std">1–8 (standard)</td><td style="color:var(--text)">1.0×</td></tr>
+            <tr><td>1st OT hour</td><td style="color:var(--amber)">1.5×</td></tr>
+            <tr><td>2nd OT hour+</td><td style="color:var(--red)">2.0×</td></tr>
+          </table>
+        </div>
+        <div style="background:var(--bg);border-radius:5px;padding:9px">
+          <div style="font-size:11px;color:var(--amber);font-weight:600;margin-bottom:5px">Rest Day / Public Holiday OT</div>
+          <table class="ot-table">
+            <tr><th>Hours</th><th>Rate</th></tr>
+            <tr><td id="rd-1">Hours 1–8</td><td style="color:var(--amber)">2.0×</td></tr>
+            <tr><td id="rd-2">Hour 9</td><td style="color:var(--red)">3.0×</td></tr>
+            <tr><td id="rd-3">Hour 10+</td><td style="color:var(--red)">4.0×</td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="lbl" style="margin-bottom:7px">Additional Costs per Shift</div>
+      <div class="gauto" style="margin-bottom:12px">
+        <div>
+          <div class="lbl">Night Shift Allowance Multiplier</div>
+          <input type="number" id="w-night" value="1.2" min="1.0" max="3.0" step="0.05"
+            onchange="updateWage('nightAllowMult',+this.value)">
+          <div class="sublbl">e.g. 1.2 = 20% on top of base hourly rate × paid hrs</div>
+        </div>
+        <div>
+          <div class="lbl">Meal Allowance / Shift</div>
+          <input type="number" id="w-meal" value="50000" min="0" step="5000" onchange="updateWage('mealAllowance',+this.value)">
+        </div>
+        <div>
+          <div class="lbl">Transport Allowance / Shift</div>
+          <input type="number" id="w-trans" value="30000" min="0" step="5000" onchange="updateWage('transportAllowance',+this.value)">
+        </div>
+        <div>
+          <div class="lbl">Public Holidays / Year</div>
+          <input type="number" id="w-ph" value="16" min="0" max="30" onchange="updateWage('phPerYear',+this.value)">
+          <div class="sublbl">Indonesia avg: ~16</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="gauto">
+        <div>
+          <label class="toggle-row">
+            <input type="checkbox" id="w-bpjs" checked onchange="updateWage('includeBPJS',this.checked)">
+            BPJS Employer (~10.24%)
+          </label>
+          <div class="sublbl" style="margin-top:3px">JKK+JHT+JP+JKM+Kesehatan</div>
+        </div>
+        <div>
+          <label class="toggle-row">
+            <input type="checkbox" id="w-thr" checked onchange="updateWage('includeTHR',this.checked)">
+            THR — 1× monthly salary
+          </label>
+        </div>
+        <div>
+          <div class="lbl">Absenteeism Rate (%)</div>
+          <input type="number" id="w-absent" value="5" min="0" max="30" step="0.5" onchange="updateWage('absenteeismPct',+this.value)">
+        </div>
+        <div>
+          <div class="lbl">Annual Wage Escalation (%)</div>
+          <input type="number" id="w-esc" value="8" min="0" max="30" onchange="updateWage('escalationPct',+this.value)">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grade / Pay Rate Setup -->
+  <div class="collap" id="grades-collap">
+    <div class="collap-hdr" onclick="gradesHeaderClick()">
+      <div class="collap-title">👷 Pay Grade Setup — Rates by Classification <span id="grades-lock-badge" class="locked-tab" style="font-size:10px;font-family:var(--font-sans);font-weight:400">🔒 Password protected</span></div>
+      <div class="collap-arr" id="arr-grades">▼</div>
+    </div>
+    <div class="collap-body" id="body-grades">
+      <!-- Lock gate inside panel -->
+      <div id="grades-lock-gate" style="text-align:center;padding:18px">
+        <div style="font-size:20px;margin-bottom:8px">🔒</div>
+        <div style="font-size:12px;color:var(--muted);font-family:var(--font-sans);margin-bottom:12px">Enter password to access salary band data</div>
+        <input type="password" id="grades-pw-input" placeholder="Password" style="max-width:200px;text-align:center;margin-bottom:8px" onkeydown="if(event.key==='Enter')checkGradesAuth()">
+        <br><button class="lock-gate-btn" onclick="checkGradesAuth()">Unlock →</button>
+        <div class="lock-gate-err" id="grades-pw-err"></div>
+      </div>
+      <!-- Actual grades content -->
+      <div id="grades-content" style="display:none">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+          <span class="unlock-badge" onclick="lockGradesSection()">🔒 Lock</span>
+        </div>
+      <div class="info-box">Define pay grades once — they apply across all roster comparisons. Each grade gets its own hourly rate (÷173), OT calculation, BPJS, and take-home. Then assign headcount per grade per crew in each roster card below. Leave grades empty to use the single monthly salary from the Wage panel.</div>
+
+      <!-- Archi Toka Salary Bands Reference -->
+      <div style="margin-bottom:14px">
+        <div class="lbl" style="margin-bottom:7px;color:var(--gold)">Archi Toka Salary Bands — Feb 2026 (IDR millions / month gross)</div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:11px">
+            <thead>
+              <tr style="border-bottom:2px solid var(--border2)">
+                <th style="padding:5px 10px;text-align:left;color:var(--muted);font-weight:500;font-family:var(--font-sans);font-size:10px;text-transform:uppercase;letter-spacing:.06em">Band</th>
+                <th style="padding:5px 10px;text-align:right;color:var(--muted);font-weight:500;font-family:var(--font-sans);font-size:10px;text-transform:uppercase;letter-spacing:.06em">Min</th>
+                <th style="padding:5px 10px;text-align:right;color:var(--gold);font-weight:600;font-family:var(--font-sans);font-size:10px;text-transform:uppercase;letter-spacing:.06em">Mid</th>
+                <th style="padding:5px 10px;text-align:right;color:var(--muted);font-weight:500;font-family:var(--font-sans);font-size:10px;text-transform:uppercase;letter-spacing:.06em">Max</th>
+                <th style="padding:5px 10px;text-align:left;color:var(--muted);font-weight:500;font-family:var(--font-sans);font-size:10px;text-transform:uppercase;letter-spacing:.06em">Classifications</th>
+                <th style="padding:5px 10px;text-align:center;color:var(--muted);font-weight:500;font-family:var(--font-sans);font-size:10px;text-transform:uppercase;letter-spacing:.06em">Add</th>
+              </tr>
+            </thead>
+            <tbody id="salary-bands-body"></tbody>
+          </table>
+        </div>
+        <div style="font-size:10px;color:var(--dim);font-family:var(--font-sans);margin-top:5px;font-style:italic">Click + to add a band as a pay grade at its midpoint salary. Values in IDR millions/month.</div>
+      </div>
+
+      <div id="grade-table-wrap"><!-- rendered by renderGradeSetup() --></div>
+      <button class="add-block" style="margin-top:8px" onclick="addGrade()">+ Add Custom Pay Grade</button>
+      </div><!-- end grades-content -->
+    </div>
+  </div>
+
+  <!-- Roster Cards -->
+  <div class="gauto-lg" id="roster-grid"></div>
+
+  <div class="mt14" style="text-align:right">
+    <button class="btn btn-gold" onclick="switchTab('results')">View Results →</button>
+  </div>
+</div>
+
+<!-- ═══ RESULTS PANE ═══ -->
+<div class="pane" id="pane-results">
+  <div class="ai-panel">
+    <div class="ai-hdr">
+      <div class="ai-hdr-left">🤖 AI Analysis (Claude)</div>
+      <div style="font-size:10px;color:var(--dim)" id="ai-hdr-sub">Fatigue, health, financial &amp; coverage analysis</div>
+    </div>
+    <div class="ai-body">
+      <div id="ai-key-row" style="display:none;margin-bottom:10px">
+        <div class="lbl" style="margin-bottom:4px">API Key <span style="color:var(--dim)">(local use only — not needed when hosted on Netlify)</span></div>
+        <input type="password" id="ai-key" placeholder="sk-ant-… — not stored" style="max-width:420px">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+
+        <!-- Single roster analysis -->
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:11px">
+          <div class="lbl" style="margin-bottom:6px;color:var(--purple)">Single Roster — Fatigue &amp; Health Deep Dive</div>
+          <div class="lbl" style="margin-bottom:5px">Select roster</div>
+          <div class="ai-roster-sel" id="ai-roster-btns"></div>
+          <div style="display:flex;gap:7px;margin-top:8px">
+            <button class="btn btn-gold" style="font-size:11px" onclick="runAI()">Analyse →</button>
+            <button class="btn" style="font-size:11px" onclick="document.getElementById('ai-output').innerHTML='<span class=ai-loading>Cleared.</span>'">Clear</button>
+          </div>
+          <div class="ai-output" id="ai-output" style="margin-top:10px;min-height:60px"><span class="ai-loading">Select a roster above and click Analyse for a deep-dive on fatigue risk, health impacts, efficiency, sickness absence prediction, and recommendations.</span></div>
+        </div>
+
+        <!-- Multi-roster comparison -->
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:11px">
+          <div class="lbl" style="margin-bottom:6px;color:var(--gold)">All Active Rosters — Financial, Coverage &amp; Fatigue Comparison</div>
+          <div style="font-size:11px;color:var(--muted);font-family:var(--font-sans);margin-bottom:8px">Compares all enabled rosters side by side across cost, coverage risk, fatigue and health outcomes.</div>
+          <div style="display:flex;gap:7px;margin-top:8px">
+            <button class="btn" style="font-size:11px;border-color:var(--gold);color:var(--gold)" onclick="runAICompare()">Compare All Rosters →</button>
+            <button class="btn" style="font-size:11px" onclick="document.getElementById('ai-compare-output').innerHTML='<span class=ai-loading>Cleared.</span>'">Clear</button>
+          </div>
+          <div class="ai-output" id="ai-compare-output" style="margin-top:10px;min-height:60px"><span class="ai-loading">Click Compare to get an AI summary comparing all active rosters on financial cost, 24/7 coverage adequacy, fatigue risk, and long-term health outcomes — with a clear recommendation.</span></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <div id="results-panel"><div class="empty-state">Enable and configure at least one roster to see results.</div></div>
+</div>
+
+<!-- ═══ LAW & BENCHMARKS PANE ═══ -->
+<!-- ═══ PAY CALCULATOR PANE ═══ -->
+<div class="pane" id="pane-pay">
+  <!-- Lock gate shown when not authenticated -->
+  <div id="pay-lock-gate" class="lock-gate">
+    <div class="lock-gate-icon">🔒</div>
+    <div class="lock-gate-title">Pay Calculator</div>
+    <div class="lock-gate-sub">This section contains salary band data and individual pay calculations.<br>Enter the access password to continue.</div>
+    <input type="password" id="pay-pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')checkPayAuth()">
+    <br>
+    <button class="lock-gate-btn" onclick="checkPayAuth()">Unlock →</button>
+    <div class="lock-gate-err" id="pay-pw-err"></div>
+  </div>
+  <!-- Actual content shown when authenticated -->
+  <div id="pay-content" style="display:none">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+      <span class="unlock-badge" onclick="lockPaySection()">🔒 Lock section</span>
+    </div>
+    <div class="pay-layout">
+
+    <!-- ── INPUTS ── -->
+    <div class="pay-inputs">
+      <div class="pay-inputs-hdr">👤 Individual Pay Packet Calculator</div>
+      <div class="pay-inputs-body">
+
+        <!-- Band selector -->
+        <div class="pay-section">
+          <div class="pay-section-title">Salary Band</div>
+          <div class="band-picker" id="pay-band-picker"></div>
+          <div class="g2" style="gap:8px">
+            <div>
+              <div class="lbl">Monthly Salary (IDR)</div>
+              <input type="number" id="pay-salary" value="9500000" min="0" step="100000"
+                oninput="pc.salary=+this.value;pc.selectedBand=null;renderBandPicker();calcPay()">
+            </div>
+            <div>
+              <div class="lbl">Salary Point</div>
+              <select id="pay-point" onchange="pc.salaryPoint=this.value;applyBandPoint();calcPay()">
+                <option value="mid">Midpoint</option>
+                <option value="min">Minimum</option>
+                <option value="max">Maximum</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+          </div>
+          <div class="salary-slider-wrap" id="pay-slider-wrap">
+            <div class="salary-slider-labels">
+              <span id="sl-min">Min</span>
+              <span id="sl-mid" style="color:var(--gold)">Mid</span>
+              <span id="sl-max">Max</span>
+            </div>
+            <input type="range" id="pay-slider" min="0" max="100" value="50"
+              oninput="pc.sliderPct=+this.value;applySlider();calcPay()">
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Employee details -->
+        <div class="pay-section">
+          <div class="pay-section-title">Employee Details</div>
+          <div class="g2" style="gap:8px;margin-bottom:8px">
+            <div>
+              <div class="lbl">Position / Name</div>
+              <input type="text" id="pay-name" placeholder="e.g. Sr Operator — John"
+                oninput="pc.name=this.value;calcPay()">
+            </div>
+            <div>
+              <div class="lbl">Work Week</div>
+              <select id="pay-workweek" onchange="pc.workWeekDays=+this.value;calcPay()">
+                <option value="5">5-day week (8 hrs std)</option>
+                <option value="6">6-day week (7 hrs std)</option>
+              </select>
+            </div>
+            <div>
+              <div class="lbl">Tax Status (PTKP)</div>
+              <select id="pay-ptkp" onchange="pc.ptkp=this.value;calcPay()">
+                <option value="TK0">TK/0 — Single, no dependents (54M)</option>
+                <option value="K0">K/0 — Married, no dependents (58.5M)</option>
+                <option value="K1">K/1 — Married, 1 dependent (63M)</option>
+                <option value="K2">K/2 — Married, 2 dependents (67.5M)</option>
+                <option value="K3">K/3 — Married, 3 dependents (72M)</option>
+              </select>
+            </div>
+            <div>
+              <div class="lbl">Employment Type</div>
+              <select id="pay-emptype" onchange="pc.empType=this.value;calcPay()">
+                <option value="PKWTT">PKWTT — Permanent</option>
+                <option value="PKWT">PKWT — Fixed Term</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Shift details -->
+        <div class="pay-section">
+          <div class="pay-section-title">Shift Details (Monthly)</div>
+          <div class="g2" style="gap:8px;margin-bottom:8px">
+            <div>
+              <div class="lbl">Days Worked / Month</div>
+              <input type="number" id="pay-daysmonth" value="19" min="0" max="31"
+                oninput="pc.daysPerMonth=+this.value;calcPay()">
+            </div>
+            <div>
+              <div class="lbl">Shift Length (gross hrs)</div>
+              <input type="number" id="pay-shiftgross" value="13" min="1" max="24" step="0.5"
+                oninput="pc.shiftGrossHrs=+this.value;calcPay()">
+            </div>
+            <div>
+              <div class="lbl">Unpaid Break / Shift</div>
+              <div class="input-unit-row">
+                <input type="number" id="pay-break" value="60" min="0" max="120" step="15"
+                  oninput="pc.unpaidBreakMin=+this.value;calcPay()">
+                <span class="unit-label">min</span>
+              </div>
+            </div>
+            <div>
+              <div class="lbl">Night Shifts / Month</div>
+              <input type="number" id="pay-nights" value="7" min="0" max="31"
+                oninput="pc.nightShiftsMonth=+this.value;calcPay()">
+            </div>
+            <div>
+              <div class="lbl">Rest Day / Weekend Shifts</div>
+              <input type="number" id="pay-restdays" value="4" min="0" max="20"
+                oninput="pc.restDayShiftsMonth=+this.value;calcPay()">
+            </div>
+            <div>
+              <div class="lbl">Public Holiday Shifts</div>
+              <input type="number" id="pay-ph" value="1" min="0" max="5"
+                oninput="pc.phShiftsMonth=+this.value;calcPay()">
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Overtime -->
+        <div class="pay-section">
+          <div class="pay-section-title">Overtime</div>
+          <div class="ot-toggle-row">
+            <div>
+              <div class="ot-toggle-label">OT included in base salary</div>
+              <div class="ot-toggle-sub">Toggle ON for positions where OT is built into base regardless of hours worked</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="pay-ot-builtin" onchange="pc.otBuiltIn=this.checked;calcPay()">
+              <span class="toggle-knob"></span>
+            </label>
+          </div>
+          <div id="pay-ot-inputs">
+            <div class="g2" style="gap:8px">
+              <div>
+                <div class="lbl">OT Hours / Shift (weekday)</div>
+                <input type="number" id="pay-ot-hrs" value="4" min="0" max="4" step="0.5"
+                  oninput="pc.otHrsPerShift=+this.value;calcPay()">
+                <div class="sublbl">Max 4 hrs/day (PP 35/2021)</div>
+              </div>
+              <div>
+                <div class="lbl">OT Shifts / Month</div>
+                <input type="number" id="pay-ot-shifts" value="15" min="0" max="31"
+                  oninput="pc.otShiftsMonth=+this.value;calcPay()">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Allowances -->
+        <div class="pay-section">
+          <div class="pay-section-title">Allowances</div>
+          <div class="g2" style="gap:8px;margin-bottom:8px">
+            <div>
+              <div class="lbl">Night Shift Multiplier</div>
+              <input type="number" id="pay-nightmult" value="1.2" min="1" max="3" step="0.05"
+                oninput="pc.nightMult=+this.value;calcPay()">
+              <div class="sublbl">e.g. 1.2 = 20% extra on paid hrs</div>
+            </div>
+            <div>
+              <div class="lbl">Meal Allowance / Shift</div>
+              <input type="number" id="pay-meal" value="50000" min="0" step="5000"
+                oninput="pc.mealAllow=+this.value;calcPay()">
+            </div>
+            <div>
+              <div class="lbl">Transport Allowance / Shift</div>
+              <input type="number" id="pay-trans" value="30000" min="0" step="5000"
+                oninput="pc.transAllow=+this.value;calcPay()">
+            </div>
+          </div>
+          <div class="lbl" style="margin-bottom:5px">Additional Allowances</div>
+          <div id="pay-extra-allows"></div>
+          <button class="add-block" style="margin-top:5px" onclick="addPayAllowance()">+ Add Allowance</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── PAYSLIP ── -->
+    <div>
+      <div class="payslip" id="payslip-output">
+        <div class="payslip-hdr">
+          <div class="payslip-name" id="ps-name">Pay Packet</div>
+          <div class="payslip-meta" id="ps-meta">Configure inputs on the left</div>
+        </div>
+        <div class="payslip-body" id="ps-body">
+          <div style="color:var(--muted);font-family:var(--font-sans);font-size:12px">Fill in the inputs to generate a pay packet.</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn" onclick="window.print()">🖨 Print Payslip</button>
+        <button class="btn" onclick="exportPayslipJSON()">↓ Export</button>
+      </div>
+    </div>
+
+  </div><!-- end pay-layout -->
+  </div><!-- end pay-content -->
+</div>
+
+<div class="pane" id="pane-law">
+  <div class="section-lbl">Indonesian Manpower Law — Key Provisions</div>
+  <div class="law-grid">
+    <div class="law-card"><h3>Standard Working Hours</h3>
+      <div class="law-item">5-day week: <span class="law-val">8 hrs/day, 40/wk</span></div>
+      <div class="law-item">6-day week: <span class="law-val">7 hrs/day, 40/wk</span></div>
+      <div class="law-item">Rest after 4 continuous hrs: <span class="law-val">≥30 min</span></div>
+      <div class="law-item">Note: hours = paid hours, not gross shift time</div>
+    </div>
+    <div class="law-card"><h3>Overtime Limits</h3>
+      <div class="law-item">Max OT per day: <span class="law-val">4 hrs</span></div>
+      <div class="law-item">Max OT per week: <span class="law-val">18 hrs</span></div>
+      <div class="law-item">12-hr paid shift = 4 hrs OT on weekday</div>
+      <div class="law-item">Food obligation during OT: <span class="law-val">≥1,400 kcal</span></div>
+    </div>
+    <div class="law-card"><h3>Weekday OT Rates (PP 35/2021)</h3>
+      <div class="law-item">Hourly rate basis: <span class="law-val">Monthly ÷ 173</span></div>
+      <div class="law-item">1st OT hour: <span class="law-val">1.5×</span></div>
+      <div class="law-item">2nd OT hour+: <span class="law-val">2.0×</span></div>
+      <div class="law-item">11-hr paid shift (weekday): <span class="law-val">~14.5 hr-equiv</span></div>
+    </div>
+    <div class="law-card"><h3>Rest Day / PH Rates (5-day wk)</h3>
+      <div class="law-item">Hours 1–8: <span class="law-val">2.0×</span></div>
+      <div class="law-item">Hour 9: <span class="law-val">3.0×</span></div>
+      <div class="law-item">Hours 10–11+: <span class="law-val">4.0×</span></div>
+      <div class="law-item">11-hr rest day shift: <span class="law-val">~27 hr-equiv</span></div>
+    </div>
+    <div class="law-card"><h3>BPJS Employer Contributions</h3>
+      <div class="law-item">Kesehatan: <span class="law-val">4.0%</span></div>
+      <div class="law-item">JKK (medium risk mining): <span class="law-val">0.24%</span></div>
+      <div class="law-item">JHT (old age): <span class="law-val">3.7%</span></div>
+      <div class="law-item">JP (pension): <span class="law-val">2.0%</span></div>
+      <div class="law-item">JKM (death): <span class="law-val">0.3%</span></div>
+      <div class="law-item">Total employer: <span class="law-val">~10.24%</span></div>
+    </div>
+    <div class="law-card"><h3>Leave &amp; Entitlements</h3>
+      <div class="law-item">Annual leave: <span class="law-val">12 days (after 1 yr)</span></div>
+      <div class="law-item">Long service: <span class="law-val">2 months (at 6 yrs)</span></div>
+      <div class="law-item">THR: <span class="law-val">1× monthly (after 1 yr)</span></div>
+      <div class="law-item">Sick leave: <span class="law-val">Paid (sliding scale)</span></div>
+    </div>
+    <div class="law-card"><h3>Recovery Time (ILO Guidelines)</h3>
+      <div class="law-item">Min. between shifts: <span class="law-val">11 hrs recommended</span></div>
+      <div class="law-item">&lt;10 hrs recovery: <span class="law-val" style="color:var(--red)">HIGH fatigue risk</span></div>
+      <div class="law-item">10–11 hrs recovery: <span class="law-val" style="color:var(--amber)">Marginal</span></div>
+      <div class="law-item">Includes commute in "obligation" time</div>
+    </div>
+    <div class="law-card"><h3>Continuous Ops Note</h3>
+      <div class="law-item">Mining/processing may be exempt from standard OT caps</div>
+      <div class="law-item">Requires ministerial permit (certain sectors)</div>
+      <div class="law-item">Shift arrangements via PKB/collective agreement</div>
+      <div class="law-item">UU 13/2003 Art.77(3), PP 35/2021</div>
+    </div>
+  </div>
+  <div class="section-lbl">Australian Mining Roster Benchmarks</div>
+  <div class="bm-grid" id="bm-grid"></div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════
+const DEF_TIMES = {
+  D:{ start:'06:30', end:'19:30' },
+  N:{ start:'18:30', end:'07:30' },
+  S:{ start:'06:30', end:'19:30' },
+};
+
+function makeRoster(overrides={}) {
+  return Object.assign({
+    name:'', enabled:false, crews:4, empPerCrew:10, startDow:1,
+    blocks:[], useOverride:false, patternOverride:'',
+    customHoursYear:null,
+    shiftTimes:{ D:{start:'06:30',end:'19:30'}, N:{start:'18:30',end:'07:30'}, S:{start:'06:30',end:'19:30'} },
+    unpaidBreakMin:60,
+    travelTimeMin:30,
+    gradeHeadcount:{},
+  }, overrides);
+}
+
+let nextGradeId = 1;
+function makeGrade(name='', salary=0) {
+  return { id: nextGradeId++, name, salary };
+}
+
+const state = {
+  wage:{
+    currency:'IDR', monthlySalary:8000000, workWeekDays:5,
+    nightAllowMult:1.2, mealAllowance:50000, transportAllowance:30000,
+    phPerYear:16, includeBPJS:true, includeTHR:true,
+    absenteeismPct:5, escalationPct:8,
+  },
+  grades: [],  // [{id, name, salary}] — shared across all rosters
+  rosters:[
+    makeRoster({
+      name:'Current 28-Day', enabled:true, crews:4, empPerCrew:10, startDow:1,
+      shiftTimes:{ D:{start:'06:30',end:'19:30'}, N:{start:'18:30',end:'07:30'}, S:{start:'06:30',end:'19:30'} },
+      unpaidBreakMin:60, travelTimeMin:30,
+      blocks:[
+        {type:'D',days:4},{type:'S',days:3},{type:'N',days:3},{type:'O',days:1},
+        {type:'D',days:3},{type:'O',days:3},{type:'N',days:4},{type:'O',days:7},
+      ],
+    }),
+    makeRoster({
+      name:'7-7-7 (3 Crew)', enabled:true, crews:3, empPerCrew:10, startDow:1,
+      shiftTimes:{ D:{start:'06:30',end:'19:30'}, N:{start:'18:30',end:'07:30'}, S:{start:'06:30',end:'19:30'} },
+      unpaidBreakMin:60, travelTimeMin:30,
+      blocks:[
+        {type:'D',days:7},{type:'N',days:7},{type:'O',days:7},
+      ],
+    }),
+    makeRoster({
+      name:'3-3-6 (3 Crew)', enabled:true, crews:3, empPerCrew:10, startDow:1,
+      shiftTimes:{ D:{start:'06:30',end:'19:30'}, N:{start:'18:30',end:'07:30'}, S:{start:'06:30',end:'19:30'} },
+      unpaidBreakMin:60, travelTimeMin:30,
+      blocks:[
+        {type:'D',days:3},{type:'N',days:3},{type:'O',days:6},
+      ],
+    }),
+  ],
+  tab:'config',
+  aiSelectedRoster:0,
+};
+
+// ════════════════════════════════════════════════════════════
+// SHIFT TIME CALCULATIONS
+// ════════════════════════════════════════════════════════════
+function toMins(t) { const [h,m]=(t||'00:00').split(':').map(Number); return h*60+m; }
+
+function calcGrossHours(start, end) {
+  const sm=toMins(start), em=toMins(end);
+  const diff = em>sm ? em-sm : em+1440-sm;
+  return diff/60;
+}
+
+function getShiftDetails(type, roster) {
+  const times = (roster.shiftTimes && roster.shiftTimes[type]) || { start:'06:00', end:'18:00' };
+  const gross = calcGrossHours(times.start, times.end);
+  const paid = Math.max(0, gross - roster.unpaidBreakMin/60);
+  const roundTrip = (roster.travelTimeMin||0) * 2 / 60;
+  const awayFromHome = gross + roundTrip;
+  const recovery = 24 - awayFromHome;
+  return { gross, paid, roundTrip, awayFromHome, recovery, start:times.start, end:times.end };
+}
+
+// ════════════════════════════════════════════════════════════
+// INDONESIAN OT ENGINE (PP 35/2021)
+// ════════════════════════════════════════════════════════════
+function calcEquivHours(paidHours, isRestDay, workWeekDays) {
+  if (isRestDay) {
+    const bp1 = workWeekDays===5 ? 8 : 7;
+    const bp2 = workWeekDays===5 ? 9 : 8;
+    let eq=0;
+    for (let h=1;h<=paidHours;h++) {
+      if (h<=bp1) eq+=2.0;
+      else if (h===bp2) eq+=3.0;
+      else eq+=4.0;
+    }
+    // Handle fractional last hour
+    const frac = paidHours % 1;
+    if (frac > 0) {
+      const wholeHrs = Math.floor(paidHours);
+      const lastH = wholeHrs+1;
+      const partialRate = lastH<=bp1?2.0:lastH===bp2?3.0:4.0;
+      eq = eq - partialRate + partialRate*frac; // adjust for fraction
+    }
+    return eq;
+  } else {
+    const stdHrs = workWeekDays===5 ? 8 : 7;
+    const std = Math.min(paidHours, stdHrs);
+    const ot = Math.max(0, paidHours - stdHrs);
+    const ot1 = Math.min(ot, 1);
+    const ot2 = Math.max(0, ot-1);
+    return std*1.0 + ot1*1.5 + ot2*2.0;
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// ROSTER ANALYSIS ENGINE
+// ════════════════════════════════════════════════════════════
+function getPattern(roster) {
+  if (roster.useOverride && roster.patternOverride)
+    return roster.patternOverride.toUpperCase().replace(/[^DNSO]/g,'');
+  return roster.blocks.flatMap(b=>Array(Math.max(0,b.days||0)).fill(b.type)).join('');
+}
+
+function maxConsec(pattern, testFn) {
+  const n=pattern.length;
+  if (!n) return 0;
+  if (pattern.every(testFn)) return n;
+  const dbl=[...pattern,...pattern];
+  let mx=0,cur=0;
+  for (const c of dbl) { testFn(c)?(cur++,mx=Math.max(mx,cur)):(cur=0); }
+  return Math.min(mx,n);
+}
+
+function checkCoverage(roster) {
+  const pattern = getPattern(roster).split('');
+  const n = pattern.length;
+  const crews = Math.max(1, roster.crews || 1);
+  if (!n) return { ok:false, noPattern:true };
+
+  // Crew offset through the cycle
+  const rawOffset = n / crews;
+  const offsetClean = Math.abs(rawOffset - Math.round(rawOffset)) < 0.01;
+
+  const dayGaps=[], nightGaps=[], totalGaps=[];
+
+  for (let d=0; d<n; d++) {
+    let hasDay=false, hasNight=false, hasAny=false;
+    for (let c=0; c<crews; c++) {
+      const idx = Math.round(((d - c * rawOffset) % n + n) % n);
+      const sh = pattern[idx];
+      if (sh==='D'||sh==='S') { hasDay=true; hasAny=true; }
+      else if (sh==='N')      { hasNight=true; hasAny=true; }
+    }
+    if (!hasAny)   totalGaps.push(d+1);
+    if (!hasDay)   dayGaps.push(d+1);
+    if (!hasNight) nightGaps.push(d+1);
+  }
+
+  // Summarise runs of gap days for compact display
+  function summariseGaps(gaps) {
+    if (!gaps.length) return '';
+    const runs=[];
+    let start=gaps[0], end=gaps[0];
+    for (let i=1;i<gaps.length;i++) {
+      if (gaps[i]===end+1) { end=gaps[i]; }
+      else { runs.push(start===end?`${start}`:`${start}–${end}`); start=end=gaps[i]; }
+    }
+    runs.push(start===end?`${start}`:`${start}–${end}`);
+    return runs.slice(0,6).join(', ')+(runs.length>6?` +${runs.length-6} more`:'');
+  }
+
+  return {
+    ok: totalGaps.length===0 && dayGaps.length===0 && nightGaps.length===0,
+    fullNoGap: totalGaps.length===0,
+    dayOk: dayGaps.length===0,
+    nightOk: nightGaps.length===0,
+    totalGaps, dayGaps, nightGaps,
+    dayGapStr: summariseGaps(dayGaps),
+    nightGapStr: summariseGaps(nightGaps),
+    totalGapStr: summariseGaps(totalGaps),
+    offsetClean,
+    offset: +rawOffset.toFixed(2),
+  };
+}
+
+function analyzeRoster(roster, wage) {
+  const patStr = getPattern(roster);
+  const pattern = patStr.split('');
+  if (!pattern.length) return null;
+  const n = pattern.length;
+  const isWorking = c => c!=='O';
+  const isNight = c => c==='N';
+  const hourlyRate = wage.monthlySalary / 173;
+
+  const maxConsOn  = maxConsec(pattern, isWorking);
+  const maxConsOff = maxConsec(pattern, c=>!isWorking(c));
+
+  // Used shift types
+  const usedTypes = [...new Set(pattern.filter(isWorking))];
+
+  // Per-type details
+  const typeDetails = {};
+  usedTypes.forEach(t => { typeDetails[t] = getShiftDetails(t, roster); });
+
+  let daysOnYear=0, nightsYear=0, weekendDaysYear=0;
+  let basePay=0, otPay=0, nightAllow=0, otherAllow=0;
+  let totalPaidHoursYear=0, totalGrossHoursYear=0, totalCommuteHoursYear=0;
+
+  for (let day=0; day<365; day++) {
+    const dow = (roster.startDow+day)%7;
+    const shift = pattern[day%n];
+    if (!isWorking(shift)) continue;
+
+    daysOnYear++;
+    if (isNight(shift)) nightsYear++;
+    const isSat=dow===6, isSun=dow===0;
+    if (isSat||isSun) weekendDaysYear++;
+
+    const sd = typeDetails[shift] || getShiftDetails(shift, roster);
+    totalGrossHoursYear += sd.gross;
+    totalPaidHoursYear  += sd.paid;
+    totalCommuteHoursYear += sd.roundTrip;
+
+    const isRestDay = isSun || (isSat && wage.workWeekDays===5);
+    const eq = calcEquivHours(sd.paid, isRestDay, wage.workWeekDays);
+    const stdHrs = wage.workWeekDays===5 ? 8 : 7;
+    const base = Math.min(sd.paid, stdHrs) * hourlyRate;
+    const ot   = (eq - Math.min(sd.paid, stdHrs)) * hourlyRate;
+    basePay += base;
+    otPay   += ot;
+    nightAllow += isNight(shift) ? sd.paid * hourlyRate * (wage.nightAllowMult - 1) : 0;
+    otherAllow += wage.mealAllowance + wage.transportAllowance;
+  }
+
+  // PH extra cost
+  const phWorkDays = Math.round(wage.phPerYear * daysOnYear / 365);
+  // Average paid hours per working shift
+  const avgPaidHrs = daysOnYear > 0 ? totalPaidHoursYear / daysOnYear : 0;
+  const wkdayEq  = calcEquivHours(avgPaidHrs, false, wage.workWeekDays);
+  const restDayEq = calcEquivHours(avgPaidHrs, true, wage.workWeekDays);
+  const phExtra = phWorkDays * (restDayEq - wkdayEq) * hourlyRate;
+
+  const shiftSubtotal = basePay + otPay + nightAllow + otherAllow + phExtra;
+  const bpjsPct = 0.04+0.0024+0.037+0.02+0.003;
+  const bpjsAnnual = wage.includeBPJS ? wage.monthlySalary*12*bpjsPct : 0;
+  const thrAnnual  = wage.includeTHR  ? wage.monthlySalary : 0;
+  const absentCost = shiftSubtotal * (wage.absenteeismPct/100);
+  const totalPerPerson = shiftSubtotal + bpjsAnnual + thrAnnual + absentCost;
+
+  // Recovery stats
+  const recoveries = usedTypes.map(t=>typeDetails[t].recovery);
+  const minRecovery = recoveries.length ? Math.min(...recoveries) : 24;
+  const avgGrossHrs = daysOnYear>0 ? totalGrossHoursYear/daysOnYear : 0;
+  const avgAwayFromHome = avgGrossHrs + (roster.travelTimeMin*2/60);
+
+  // Fatigue score
+  let fs = maxConsOn>=7?4:maxConsOn>=5?2:1;
+  const nightFrac = nightsYear/Math.max(daysOnYear,1);
+  fs += nightFrac>=0.5?3:nightFrac>=0.25?2:nightFrac>0?1:0;
+  fs += avgPaidHrs>=12?2:avgPaidHrs>=10?1:0;
+  fs += minRecovery<10?3:minRecovery<11?1:0;
+  const fatigueLabel = fs>=8?'HIGH':fs>=4?'MEDIUM':'LOW';
+
+  const hoursPerYear = roster.customHoursYear!==null ? roster.customHoursYear : totalPaidHoursYear;
+
+  // ─── Overlap & Training Opportunity Analysis ───
+  // Count days in cycle where 2+ crews are simultaneously on shift (overlap/handover days)
+  const crews = Math.max(1, roster.crews);
+  const rawOffset = n / crews;
+  let overlapDaysInCycle = 0;
+  let overlapDayNos = [];
+  for (let d = 0; d < n; d++) {
+    let crewsOn = 0;
+    for (let c = 0; c < crews; c++) {
+      const idx = Math.round(((d - c * rawOffset) % n + n) % n);
+      if (pattern[idx] !== 'O') crewsOn++;
+    }
+    if (crewsOn >= 2) { overlapDaysInCycle++; overlapDayNos.push(d+1); }
+  }
+  const overlapDaysYear = Math.round(overlapDaysInCycle * (365 / n));
+
+  // Off-block analysis: find distinct off runs in the cycle
+  // A run of 2+ consecutive off days = training/AL window
+  let offRuns = [];
+  let inOff = false, offLen = 0, offStart = 0;
+  const doublePat = [...pattern, ...pattern]; // wrap for circular
+  for (let d = 0; d < n; d++) {
+    if (pattern[d] === 'O') {
+      if (!inOff) { inOff = true; offStart = d+1; offLen = 0; }
+      offLen++;
+    } else {
+      if (inOff && offLen >= 2) offRuns.push({ start: offStart, len: offLen });
+      inOff = false; offLen = 0;
+    }
+  }
+  if (inOff && offLen >= 2) offRuns.push({ start: offStart, len: offLen });
+  const trainingWindowsPerCycle = offRuns.length;
+  const maxOffRunLen = offRuns.length ? Math.max(...offRuns.map(r=>r.len)) : 0;
+  const trainingDaysPerYear = Math.round(offRuns.reduce((s,r)=>s+r.len,0) * (365/n));
+  // Annual leave fit: how many full 12-day AL blocks fit in the max off run
+  const alFitInMaxRun = Math.floor(maxOffRunLen / 12);
+
+  return {
+    patStr, cycleLen:n,
+    daysOnYear, daysOffYear:365-daysOnYear, nightsYear, weekendDaysYear,
+    totalPaidHoursYear:Math.round(totalPaidHoursYear),
+    totalGrossHoursYear:Math.round(totalGrossHoursYear),
+    totalCommuteHoursYear:Math.round(totalCommuteHoursYear),
+    hoursPerYear:Math.round(hoursPerYear),
+    avgPaidHrs:+avgPaidHrs.toFixed(1),
+    avgGrossHrs:+avgGrossHrs.toFixed(1),
+    avgAwayFromHome:+avgAwayFromHome.toFixed(1),
+    minRecovery:+minRecovery.toFixed(1),
+    maxConsOn, maxConsOff, nightFrac,
+    typeDetails, usedTypes,
+    phExtra:Math.round(phExtra), phWorkDays,
+    basePay:Math.round(basePay), otPay:Math.round(otPay),
+    nightAllow:Math.round(nightAllow), otherAllow:Math.round(otherAllow),
+    bpjsAnnual:Math.round(bpjsAnnual), thrAnnual:Math.round(thrAnnual), absentCost:Math.round(absentCost),
+    totalPerPerson:Math.round(totalPerPerson),
+    totalPerCrew:Math.round(totalPerPerson*roster.empPerCrew),
+    totalAll:Math.round(totalPerPerson*roster.empPerCrew*roster.crews),
+    fatigueScore:fs, fatigueLabel,
+    coverage: checkCoverage(roster),
+    overlapDaysYear, overlapDaysInCycle, overlapDayNos,
+    trainingWindowsPerCycle, maxOffRunLen, trainingDaysPerYear, alFitInMaxRun, offRuns,
+    takeHome: state.wage.currency==='IDR' ? calcTakeHome(totalPerPerson, wage.monthlySalary) : null,
+    crews:roster.crews, empPerCrew:roster.empPerCrew,
+    travelTimeMin:roster.travelTimeMin||0,
+    unpaidBreakMin:roster.unpaidBreakMin||0,
+    // Grade-aware totals (computed separately, override totalAll if grades defined)
+    gradeBreakdown: calcGradeBreakdown(roster, wage, totalPaidHoursYear, daysOnYear, nightsYear, weekendDaysYear, pattern, n),
+  };
+}
+
+// ════════════════════════════════════════════════════════════
+// GRADE-AWARE COST BREAKDOWN
+// ════════════════════════════════════════════════════════════
+function calcGradeBreakdown(roster, wage, totalPaidHoursYear, daysOnYear, nightsYear, weekendDaysYear, pattern, n) {
+  const grades = state.grades;
+  if (!grades.length) return null;
+
+  // Only activate if at least one grade has BOTH a salary AND headcount > 0 for this roster
+  const hasActiveGrade = grades.some(g =>
+    g.salary > 0 && ((roster.gradeHeadcount && roster.gradeHeadcount[g.id]) || 0) > 0
+  );
+  if (!hasActiveGrade) return null;
+
+  const isWorking = c => c !== 'O';
+  const isNight   = c => c === 'N';
+  const bpjsPct   = 0.04+0.0024+0.037+0.02+0.003;
+
+  const rows = grades.map(g => {
+    const count = (roster.gradeHeadcount && roster.gradeHeadcount[g.id]) || 0;
+    if (!g.salary || !count) return { grade:g, count, costPerPerson:0, crewCost:0, totalCost:0, takeHome:null };
+
+    const hr = g.salary / 173;
+    let basePay=0, otPay=0, nightAllow=0, otherAllow=0;
+
+    for (let day=0; day<365; day++) {
+      const dow = (roster.startDow + day) % 7;
+      const shift = pattern[day % n];
+      if (!isWorking(shift)) continue;
+      const sd = getShiftDetails(shift, roster);
+      const isSat=dow===6, isSun=dow===0;
+      const isRestDay = isSun || (isSat && wage.workWeekDays===5);
+      const eq = calcEquivHours(sd.paid, isRestDay, wage.workWeekDays);
+      const stdHrs = wage.workWeekDays===5 ? 8 : 7;
+      basePay  += Math.min(sd.paid, stdHrs) * hr;
+      otPay    += (eq - Math.min(sd.paid, stdHrs)) * hr;
+      nightAllow += isNight(shift) ? sd.paid * hr * (wage.nightAllowMult - 1) : 0;
+      otherAllow += wage.mealAllowance + wage.transportAllowance;
+    }
+
+    const avgPaidHrs = daysOnYear > 0 ? totalPaidHoursYear / daysOnYear : 0;
+    const phWorkDays = Math.round(wage.phPerYear * daysOnYear / 365);
+    const phExtra = phWorkDays * (calcEquivHours(avgPaidHrs, true, wage.workWeekDays) - calcEquivHours(avgPaidHrs, false, wage.workWeekDays)) * hr;
+    const shiftSub = basePay + otPay + nightAllow + otherAllow + phExtra;
+    const bpjsAnnual = wage.includeBPJS ? g.salary * 12 * bpjsPct : 0;
+    const thrAnnual  = wage.includeTHR  ? g.salary : 0;
+    const absentCost = shiftSub * (wage.absenteeismPct / 100);
+    const costPerPerson = Math.round(shiftSub + bpjsAnnual + thrAnnual + absentCost);
+    const crewCost  = costPerPerson * count;
+    const totalCost = crewCost * roster.crews;
+    const takeHome  = wage.currency==='IDR' ? calcTakeHome(costPerPerson, g.salary) : null;
+    return { grade:g, count, costPerPerson, crewCost, totalCost, takeHome,
+      basePay:Math.round(basePay), otPay:Math.round(otPay),
+      nightAllow:Math.round(nightAllow), phExtra:Math.round(phExtra),
+      bpjsAnnual:Math.round(bpjsAnnual), thrAnnual:Math.round(thrAnnual) };
+  });
+
+  const totalHeadcount = rows.reduce((s,r)=>s+r.count,0);
+  const totalCrewCost  = rows.reduce((s,r)=>s+r.crewCost,0);
+  const totalAllGrades = totalCrewCost * roster.crews;
+  return { rows, totalHeadcount, totalCrewCost, totalAllGrades };
+}
+
+// ════════════════════════════════════════════════════════════
+// TAKE-HOME PAY (PPh 21 + Employee BPJS)
+// ════════════════════════════════════════════════════════════
+function calcTakeHome(grossAnnual, monthlySalary) {
+  // Employee BPJS deductions: Kesehatan 1% + JHT 2% + JP 1% = 4%
+  const empBpjsRate = 0.01 + 0.02 + 0.01;
+  const empBpjsAnnual = monthlySalary * 12 * empBpjsRate;
+
+  // PPh 21 — progressive income tax on (gross - PTKP - employee BPJS)
+  // PTKP TK/0 (single, no dependents): IDR 54,000,000/yr
+  // For non-IDR we skip PPh (not applicable)
+  const PTKP = 54000000;
+  const taxableIncome = Math.max(0, grossAnnual - PTKP - empBpjsAnnual);
+
+  let pph21 = 0;
+  const brackets = [
+    { limit: 60000000,   rate: 0.05 },
+    { limit: 190000000,  rate: 0.15 },
+    { limit: 250000000,  rate: 0.25 },
+    { limit: 4500000000, rate: 0.30 },
+    { limit: Infinity,   rate: 0.35 },
+  ];
+  let remaining = taxableIncome;
+  let prev = 0;
+  for (const b of brackets) {
+    if (remaining <= 0) break;
+    const slice = Math.min(remaining, b.limit - prev);
+    pph21 += slice * b.rate;
+    remaining -= slice;
+    prev = b.limit;
+  }
+
+  const takeHomeAnnual = Math.round(grossAnnual - empBpjsAnnual - pph21);
+  const takeHomeMonthly = Math.round(takeHomeAnnual / 12);
+  return {
+    grossAnnual: Math.round(grossAnnual),
+    empBpjsAnnual: Math.round(empBpjsAnnual),
+    pph21Annual: Math.round(pph21),
+    takeHomeAnnual,
+    takeHomeMonthly,
+    effectiveTaxRate: grossAnnual > 0 ? +((pph21 / grossAnnual) * 100).toFixed(1) : 0,
+  };
+}
+
+// ════════════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════════════
+function fmtC(n,cur){
+  try{const l=cur==='IDR'?'id-ID':cur==='AUD'?'en-AU':'en-US';return new Intl.NumberFormat(l,{style:'currency',currency:cur,maximumFractionDigits:0}).format(n);}
+  catch(e){return `${cur} ${Math.round(n).toLocaleString()}`;}
+}
+function fmtN(n){return Math.round(n).toLocaleString();}
+function esc(s){return(s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));}
+function hrsLabel(h){return `${(+h).toFixed(1)}h`;}
+const COLORS=['var(--r1)','var(--r2)','var(--r3)'];
+const SHIFT_LABELS={D:'Day',N:'Night',S:'Swing',O:'Off'};
+
+// ════════════════════════════════════════════════════════════
+// GRADE SETUP RENDER
+// ════════════════════════════════════════════════════════════
+function renderGradeSetup() {
+  if (!gradesSectionUnlocked) return; // don't render salary data when locked
+  const wrap = document.getElementById('grade-table-wrap');
+  if (!wrap) return;
+  const grades = state.grades;
+  if (!grades.length) {
+    wrap.innerHTML = `<div class="no-grades-note">No grades defined — all rosters use the single monthly salary from the Wage panel. Add grades to enable per-classification costing.</div>`;
+    return;
+  }
+  const cur = state.wage.currency;
+  wrap.innerHTML = `<table class="grade-setup-table">
+    <thead><tr>
+      <th style="min-width:140px">Grade / Classification</th>
+      <th style="min-width:155px">Monthly Salary</th>
+      <th style="min-width:120px">Hourly Rate (÷173)</th>
+      <th></th>
+    </tr></thead>
+    <tbody>
+    ${grades.map((g,gi) => `<tr>
+      <td><input type="text" value="${esc(g.name)}" placeholder="e.g. Operator Gr.1"
+        oninput="updateGrade(${gi},'name',this.value)"></td>
+      <td><input type="number" value="${g.salary}" min="0" step="100000"
+        onchange="updateGrade(${gi},'salary',+this.value)"
+        oninput="updateGrade(${gi},'salary',+this.value)"></td>
+      <td><span class="grade-derived">${g.salary ? fmtC(Math.round(g.salary/173), cur) : '—'}</span></td>
+      <td><button class="grade-del" onclick="deleteGrade(${gi})" title="Remove grade">×</button></td>
+    </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function buildGradeMatrix(r, idx) {
+  const grades = state.grades;
+  const cur = state.wage.currency;
+
+  if (!grades.length) {
+    // Fallback — plain empPerCrew input
+    return `<div class="mt8">
+      <div class="lbl">Employees / Crew (all same rate)</div>
+      <input type="number" value="${r.empPerCrew}" min="1" style="max-width:100px"
+        onchange="updateRoster(${idx},'empPerCrew',+this.value)">
+      <div class="sublbl">Add pay grades above to assign headcount by classification</div>
+    </div>`;
+  }
+
+  const totalPerCrew = grades.reduce((s,g) => s + ((r.gradeHeadcount && r.gradeHeadcount[g.id]) || 0), 0);
+  const hasAnyHeadcount = totalPerCrew > 0;
+
+  return `<div class="mt8">
+    <div class="lbl" style="margin-bottom:5px">Headcount per Crew by Pay Grade</div>
+    <table class="crew-matrix">
+      <thead><tr>
+        <th>Grade</th>
+        <th>Monthly Salary</th>
+        <th style="text-align:center">Count / Crew</th>
+        <th style="text-align:right">Total (all crews)</th>
+      </tr></thead>
+      <tbody>
+      ${grades.map(g => {
+        const count = (r.gradeHeadcount && r.gradeHeadcount[g.id]) || 0;
+        return `<tr>
+          <td style="color:var(--text);font-weight:500">${esc(g.name)||'—'}</td>
+          <td style="color:var(--muted);font-family:var(--font-sans)">${g.salary ? fmtC(g.salary,cur) : '—'}</td>
+          <td style="text-align:center">
+            <input type="number" value="${count}" min="0" max="50" step="1"
+              onchange="updateGradeHeadcount(${idx},${g.id},+this.value)">
+          </td>
+          <td style="text-align:right;color:var(--muted)">${count * r.crews} ppl</td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+      <tfoot><tr>
+        <td colspan="2">Total per crew</td>
+        <td style="text-align:center;color:var(--gold)">${totalPerCrew}</td>
+        <td style="text-align:right;color:var(--gold)">${totalPerCrew * r.crews} ppl</td>
+      </tr></tfoot>
+    </table>
+    ${!hasAnyHeadcount ? `<div class="sublbl" style="margin-top:6px;color:var(--amber)">⚠ No headcount entered — using default ${r.empPerCrew} employees/crew at the wage panel rate until grades are filled in.</div>` : ''}
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════
+// RENDER — ROSTER CARDS
+// ════════════════════════════════════════════════════════════
+function renderRosterCards(){
+  document.getElementById('roster-grid').innerHTML=
+    state.rosters.map((r,i)=>buildCard(r,i)).join('');
+  updateOTDisplay();
+}
+
+function buildCard(r,idx){
+  const pattern=getPattern(r).split('');
+  const result=r.enabled&&pattern.length?analyzeRoster(r,state.wage):null;
+  const col=COLORS[idx];
+  const dotC=r.enabled?`dot-${idx}`:'dot-off';
+  const arcC=r.enabled?`arc rc-en-${idx}`:'';
+
+  // Block builder
+  const blockRows=r.blocks.map((b,bi)=>{
+    const typeOpts=['D','N','O','S'].map(t=>`<option value="${t}" ${b.type===t?'selected':''}>${SHIFT_LABELS[t]}</option>`).join('');
+    const bc=['D','S'].includes(b.type)?'var(--day-text)':b.type==='N'?'var(--night-text)':'var(--off-text)';
+    return `<div class="block-row" style="border-left:3px solid ${bc}">
+      <select style="width:105px;font-size:11px" onchange="updateBlock(${idx},${bi},'type',this.value)">${typeOpts}</select>
+      <input type="number" value="${b.days}" min="1" max="90" style="width:46px;font-size:11px;text-align:center" onchange="updateBlock(${idx},${bi},'days',+this.value)">
+      <span class="block-dl">days</span>
+      <button class="block-mv" onclick="moveBlock(${idx},${bi},-1)">↑</button>
+      <button class="block-mv" onclick="moveBlock(${idx},${bi},1)">↓</button>
+      <button class="block-del" onclick="deleteBlock(${idx},${bi})">×</button>
+    </div>`;
+  }).join('');
+
+  // Pattern vis
+  const cells=pattern.slice(0,42).map((c,i)=>{
+    const cl=['D','S'].includes(c)?'pc-D':c==='N'?'pc-N':c==='O'?'pc-O':'pc-?';
+    return `<div class="pc ${cl}" title="Day ${i+1}: ${SHIFT_LABELS[c]||c}">${c}</div>`;
+  }).join('')+(pattern.length>42?`<span style="font-size:9px;color:var(--muted);margin-left:3px">+${pattern.length-42}</span>`:'');
+
+  const patCounts=pattern.length?`<span style="color:var(--day-text)">D/S: ${pattern.filter(c=>['D','S'].includes(c)).length}</span>
+    <span style="color:var(--night-text)">N: ${pattern.filter(c=>c==='N').length}</span>
+    <span style="color:var(--off-text)">Off: ${pattern.filter(c=>c==='O').length}</span>
+    <span style="color:var(--muted)">${pattern.length}-day cycle</span>`:
+    `<span style="color:var(--dim)">No blocks yet</span>`;
+
+  // Coverage check — always compute when we have a pattern and crews
+  const cov = pattern.length && r.crews ? checkCoverage(r) : null;
+  let covHtml = '';
+  if (cov) {
+    if (cov.ok) {
+      covHtml = `<div class="cov-ok">
+        <div class="cov-title" style="color:var(--green)">✓ Full 24/7 coverage maintained</div>
+        <div class="cov-detail">All ${r.crews} crews offset by ${cov.offset} days — day &amp; night shifts covered every day of the cycle.</div>
+        ${!cov.offsetClean?`<div class="cov-offset-warn">⚠ Cycle length (${pattern.length}) doesn't divide evenly by ${r.crews} crews — verify crew offsets are intentional.</div>`:''}
+      </div>`;
+    } else {
+      const lines = [];
+      if (cov.totalGaps.length) lines.push(`<span class="cov-gap-bad">No staff at all — Day${cov.totalGapStr}</span>`);
+      if (!cov.totalGaps.length && cov.dayGaps.length) lines.push(`<span class="cov-gap-label">No day shift — Day${cov.dayGapStr.length>60?cov.dayGapStr.slice(0,60)+'…':cov.dayGapStr} (${cov.dayGaps.length} day${cov.dayGaps.length>1?'s':''})</span>`);
+      if (cov.nightGaps.length && !cov.totalGaps.length) lines.push(`<span class="cov-gap-label">No night shift — Day${cov.nightGapStr.length>60?cov.nightGapStr.slice(0,60)+'…':cov.nightGapStr} (${cov.nightGaps.length} day${cov.nightGaps.length>1?'s':''})</span>`);
+      const cls = cov.totalGaps.length ? 'cov-bad' : 'cov-warn';
+      covHtml = `<div class="${cls}">
+        <div class="cov-title" style="color:${cov.totalGaps.length?'var(--red)':'var(--amber)'}">
+          ${cov.totalGaps.length?'✗ COVERAGE GAP — no staff scheduled':'⚠ Partial coverage gap'}
+        </div>
+        <div class="cov-detail">${lines.join('<br>')}</div>
+        ${!cov.offsetClean?`<div class="cov-offset-warn">Also: cycle (${pattern.length} days) doesn't divide evenly by ${r.crews} crews — crew offsets may be misaligned.</div>`:''}
+      </div>`;
+    }
+  }
+
+  // Shift times section — only for shift types that appear in the pattern
+  const usedTypes=[...new Set(pattern.filter(c=>c!=='O'))];
+  const stRows=usedTypes.map(t=>{
+    const sd=getShiftDetails(t,r);
+    const recClass=sd.recovery<10?'var(--red)':sd.recovery<11?'var(--amber)':'var(--green)';
+    const tid=`${idx}-${t}`;
+    return `<div class="shift-type-row">
+      <div class="stype-badge stype-${['D','S'].includes(t)?'D':t}">${SHIFT_LABELS[t]}</div>
+      <div>
+        <input type="time" value="${sd.start}" onchange="updateShiftTime(${idx},'${t}','start',this.value)" style="font-size:11px">
+        <div class="time-label">Start</div>
+      </div>
+      <div>
+        <input type="time" value="${sd.end}" onchange="updateShiftTime(${idx},'${t}','end',this.value)" style="font-size:11px">
+        <div class="time-label">End</div>
+      </div>
+      <div class="shift-derived" id="sd-${tid}">
+        <span style="color:var(--muted)">${hrsLabel(sd.gross)} gross</span><br>
+        <span style="color:var(--text)">${hrsLabel(sd.paid)} paid</span><br>
+        <span style="color:${recClass}">${hrsLabel(sd.recovery)} recovery</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Break & travel
+  const sd0=usedTypes.length?getShiftDetails(usedTypes[0],r):{gross:12,paid:11,roundTrip:1,awayFromHome:13,recovery:11};
+  const commuteHrsPerYear=Math.round((r.travelTimeMin||0)*2/60*pattern.filter(c=>c!=='O').length*(365/Math.max(pattern.length,1)));
+
+  const recCards=usedTypes.map(t=>{
+    const sd=getShiftDetails(t,r);
+    const cls=sd.recovery<10?'rec-bad':sd.recovery<11?'rec-warn':'rec-ok';
+    const col2=sd.recovery<10?'var(--red)':sd.recovery<11?'var(--amber)':'var(--green)';
+    return `<div class="rec-card ${cls}">
+      <div class="rec-type">${SHIFT_LABELS[t]} shift</div>
+      <div class="rec-val" style="color:${col2}">${hrsLabel(sd.recovery)} recovery</div>
+      <div class="rec-detail">${hrsLabel(sd.awayFromHome)} from home<br>${hrsLabel(sd.gross)} on-site + ${hrsLabel(sd.roundTrip)} travel</div>
+    </div>`;
+  }).join('');
+
+  const shiftTimesSection=usedTypes.length?`
+    <div class="shift-times-panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="stp-title" style="margin-bottom:0">Shift Times &amp; Hours</div>
+        ${idx > 0 ? `<button class="btn btn-sm" style="font-size:10px;padding:3px 9px" onclick="copyTimesFromFirst(${idx})">⇡ Copy from Roster 1</button>` : ''}
+      </div>
+      ${stRows}
+      <div class="bt-grid">
+        <div>
+          <div class="lbl">Unpaid Break / Shift</div>
+          <div class="input-unit-row">
+            <input type="number" value="${r.unpaidBreakMin}" min="0" max="120" step="5"
+              onchange="updateRoster(${idx},'unpaidBreakMin',+this.value)">
+            <span class="unit-label">min</span>
+          </div>
+          <div class="sublbl">e.g. 60 min unpaid lunch</div>
+        </div>
+        <div>
+          <div class="lbl">Travel Time (one-way)</div>
+          <div class="input-unit-row">
+            <input type="number" value="${r.travelTimeMin||0}" min="0" max="300" step="5"
+              onchange="updateRoster(${idx},'travelTimeMin',+this.value)">
+            <span class="unit-label">min</span>
+          </div>
+          <div class="travel-note">Fatigue analysis only — not included in wages</div>
+        </div>
+      </div>
+      ${usedTypes.length?`
+      <div class="recovery-grid mt8">${recCards}</div>
+      <div class="commute-summary">
+        Annual commute: <span class="cs-val">${fmtN(commuteHrsPerYear)} hrs/yr</span>
+        &nbsp;·&nbsp; ${fmtN(Math.round(commuteHrsPerYear/r.travelTimeMin*30))} round trips
+        &nbsp;·&nbsp; equiv. <span class="cs-val">${(commuteHrsPerYear/24).toFixed(1)} working days</span>
+      </div>`:''}</div>`:
+    `<div class="warn">Add shift blocks above to configure shift times.</div>`;
+
+  // Quick stats
+  const qsHtml=result?`
+    <div class="qs-box">
+      <div class="qs-title" style="color:${col}">Quick Stats</div>
+      <div class="qs-g">
+        ${qs('Days On / Year',fmtN(result.daysOnYear))}
+        ${qs('Days Off / Year',fmtN(result.daysOffYear))}
+        ${qs('Paid Hrs / Shift',hrsLabel(result.avgPaidHrs))}
+        ${qs('Gross Hrs / Shift',hrsLabel(result.avgGrossHrs))}
+        ${qs('Total Paid Hrs / Yr',fmtN(result.totalPaidHoursYear)+' hrs')}
+        ${qs('Commute Hrs / Yr',fmtN(result.totalCommuteHoursYear)+' hrs')}
+        ${qs('Night Shifts / Yr',fmtN(result.nightsYear))}
+        ${qs('Min Recovery Window',hrsLabel(result.minRecovery),result.minRecovery<10?'var(--red)':result.minRecovery<11?'var(--amber)':'var(--green)')}
+        ${qs('Overlap Days / Year',fmtN(result.overlapDaysYear),'var(--blue)')}
+        ${qs('Training Windows / Cycle',result.trainingWindowsPerCycle,'var(--green)')}
+        ${qs('Longest Off Block',result.maxOffRunLen+' days',result.maxOffRunLen>=5?'var(--green)':'var(--muted)')}
+        ${qs('Cost / Person / Yr',fmtC(result.totalPerPerson,state.wage.currency),'var(--gold)')}
+        ${qs('Fatigue Risk',result.fatigueLabel,result.fatigueLabel==='HIGH'?'var(--red)':result.fatigueLabel==='MEDIUM'?'var(--amber)':'var(--green)')}
+      </div>
+    </div>`:'';
+
+  const overrideHtml=`
+    <div class="mt8">
+      <label class="toggle-row" style="margin-bottom:5px">
+        <input type="checkbox" ${r.useOverride?'checked':''} onchange="updateRoster(${idx},'useOverride',this.checked)">
+        Raw pattern override (D/N/S/O string)
+      </label>
+      ${r.useOverride?`<input type="text" value="${esc(r.patternOverride)}"
+        style="letter-spacing:.12em;text-transform:uppercase;font-size:11px"
+        oninput="updateRoster(${idx},'patternOverride',this.value.toUpperCase().replace(/[^DNSO]/g,''))">`:''}</div>`;
+
+  return `<div class="roster-card ${arcC}">
+    <div class="rc-hdr">
+      <div class="rc-dot ${dotC}"></div>
+      <input class="rc-name" placeholder="Roster ${idx+1} name…" value="${esc(r.name)}"
+        oninput="updateRoster(${idx},'name',this.value)">
+      <label class="toggle-row">
+        <input type="checkbox" ${r.enabled?'checked':''} onchange="updateRoster(${idx},'enabled',this.checked)">
+        Active
+      </label>
+    </div>
+    <div class="rc-body">
+      <div class="lbl">Shift Block Builder</div>
+      <div class="block-list">${blockRows}</div>
+      <button class="add-block" onclick="addBlock(${idx})">+ Add Shift Block</button>
+      ${pattern.length?`<div class="pvis"><div class="pcells">${cells}</div><div class="plegend">${patCounts}</div></div>`:''}
+      ${covHtml}
+      ${overrideHtml}
+      <div class="divider"></div>
+      ${shiftTimesSection}
+      <div class="divider"></div>
+      <div class="g2">
+        <div><div class="lbl">Num Crews</div>
+          <input type="number" value="${r.crews}" min="2" max="8" onchange="updateRoster(${idx},'crews',+this.value)"></div>
+        <div><div class="lbl">Cycle Start Day</div>
+          <select onchange="updateRoster(${idx},'startDow',+this.value)">
+            ${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+              .map((d,j)=>`<option value="${j}" ${r.startDow===j?'selected':''}>${d}</option>`).join('')}
+          </select></div>
+        <div><div class="lbl">Custom Hrs / Year</div>
+          <input type="number" value="${r.customHoursYear||''}" min="0" max="8760" placeholder="Auto"
+            onchange="updateRoster(${idx},'customHoursYear',this.value?+this.value:null)">
+          <div class="sublbl">Leave blank to auto-calc</div></div>
+      </div>
+      ${buildGradeMatrix(r, idx)}
+      ${qsHtml}
+    </div>
+  </div>`;
+}
+
+function qs(label,value,color='var(--text)'){
+  return `<div><div class="qsl">${label}</div><div class="qsv" style="color:${color}">${value}</div></div>`;
+}
+
+// ════════════════════════════════════════════════════════════
+// RENDER — RESULTS
+// ════════════════════════════════════════════════════════════
+function renderResults(){
+  const actives=state.rosters
+    .map((r,i)=>({r,i,result:r.enabled&&getPattern(r).length?analyzeRoster(r,state.wage):null}))
+    .filter(x=>x.result);
+
+  // AI roster buttons
+  const ab=document.getElementById('ai-roster-btns');
+  ab.innerHTML=actives.map(({r,i})=>
+    `<button class="ai-sel-btn ${state.aiSelectedRoster===i?'selected':''}" onclick="selectAIRoster(${i})">${esc(r.name)||`Roster ${i+1}`}</button>`
+  ).join('');
+  if (!actives.find(x=>x.i===state.aiSelectedRoster)&&actives.length) state.aiSelectedRoster=actives[0].i;
+
+  const panel=document.getElementById('results-panel');
+  if (!actives.length){panel.innerHTML='<div class="empty-state">Enable at least one roster with shift blocks to see results.</div>';return;}
+
+  const w=state.wage;
+  let html='';
+
+  // Comparison table
+  const metrics=[
+    {g:'coverage',label:'24/7 coverage status',       key:'coverage', special:'coverage'},
+    {g:'coverage',label:'Day shift gaps (cycle days)', key:'coverage', special:'cov-day'},
+    {g:'coverage',label:'Night shift gaps (cycle days)',key:'coverage', special:'cov-night'},
+    {g:'schedule',label:'Days worked / year',         key:'daysOnYear',           lb:false},
+    {g:'schedule',label:'Days off / year',            key:'daysOffYear',           lb:false},
+    {g:'schedule',label:'Gross hrs / shift (avg)',    key:'avgGrossHrs',           lb:false, fmt:v=>hrsLabel(v)},
+    {g:'schedule',label:'Paid hrs / shift (avg)',     key:'avgPaidHrs',            lb:false, fmt:v=>hrsLabel(v)},
+    {g:'schedule',label:'Total paid hrs / year',      key:'totalPaidHoursYear',    lb:false, fmt:v=>fmtN(v)+' hrs'},
+    {g:'schedule',label:'Max consecutive on',         key:'maxConsOn',             lb:true},
+    {g:'schedule',label:'Night shifts / year',        key:'nightsYear',            lb:true},
+    {g:'schedule',label:'Weekend/rest day shifts',    key:'weekendDaysYear',       lb:true},
+    {g:'opportunity',label:'Overlap / handover days / yr', key:'overlapDaysYear',        lb:false},
+    {g:'opportunity',label:'Training & AL windows / cycle',key:'trainingWindowsPerCycle', lb:false},
+    {g:'opportunity',label:'Longest off block (days)',     key:'maxOffRunLen',            lb:false},
+    {g:'opportunity',label:'AL-length blocks available',   key:'alFitInMaxRun',           lb:false},
+    {g:'fatigue', label:'Min recovery window',        key:'minRecovery',           lb:false, fmt:v=>hrsLabel(v)},
+    {g:'fatigue', label:'Avg away from home / day',   key:'avgAwayFromHome',       lb:true,  fmt:v=>hrsLabel(v)},
+    {g:'fatigue', label:'Annual commute (hrs)',        key:'totalCommuteHoursYear', lb:true,  fmt:v=>fmtN(v)+' hrs'},
+    {g:'fatigue', label:'Fatigue risk',               key:'fatigueLabel',          special:'fatigue'},
+    {g:'cost',    label:'Base pay / person / yr',     key:'basePay',               lb:true,  fmt:v=>fmtC(v,w.currency)},
+    {g:'cost',    label:'Overtime pay / person',      key:'otPay',                 lb:true,  fmt:v=>fmtC(v,w.currency)},
+    {g:'cost',    label:'BPJS employer / person',     key:'bpjsAnnual',            lb:true,  fmt:v=>fmtC(v,w.currency)},
+    {g:'cost',    label:'Total cost / person / yr',   key:'totalPerPerson',        lb:true,  fmt:v=>fmtC(v,w.currency)},
+    {g:'cost',    label:'Total cost — all staff',     key:'totalAll',              lb:true,  special:'totalAll'},
+    {g:'cost',    label:'Total headcount (all crews)', key:'gradeBreakdown',       special:'headcount'},
+  ];
+
+  const fatigueOrd={LOW:1,MEDIUM:2,HIGH:3};
+  const groupLabels={coverage:'Coverage',schedule:'Schedule',opportunity:'Training & Leave Opportunity',fatigue:'Fatigue & Travel',cost:'Cost'};
+  let lastGroup='';
+
+  html+=`<div class="cmp-wrap"><div class="cmp-hdr">📊 Side-by-Side Comparison</div>
+    <div class="tscroll"><table><thead><tr>
+      <th style="min-width:220px">Metric</th>
+      ${actives.map(({r,i})=>`<th style="color:${COLORS[i]};min-width:160px">${esc(r.name)||`Roster ${i+1}`}</th>`).join('')}
+    </tr></thead><tbody>`;
+
+  for (const m of metrics){
+    if (m.g!==lastGroup){
+      html+=`<tr><td class="section-group" colspan="${1+actives.length}">${groupLabels[m.g]||m.g}</td></tr>`;
+      lastGroup=m.g;
+    }
+    const vals=actives.map(({result})=>result[m.key]);
+    let bestIdx=-1;
+    if (actives.length>1){
+      if (m.special==='fatigue'){const fv=vals.map(v=>fatigueOrd[v]||9);bestIdx=fv.indexOf(Math.min(...fv));}
+      else if (m.special==='totalAll'){
+        const tv=actives.map(({result})=>result.gradeBreakdown?result.gradeBreakdown.totalAllGrades:result.totalAll);
+        bestIdx=tv.indexOf(Math.min(...tv));
+      }
+      else if (!m.special){const nv=vals.map(Number);bestIdx=m.lb?nv.indexOf(Math.min(...nv)):nv.indexOf(Math.max(...nv));}
+    }
+    html+=`<tr><td style="color:var(--muted);font-size:11px;font-family:var(--font-sans)">${m.label}</td>`;
+    vals.forEach((v,vi)=>{
+      const isBest=vi===bestIdx&&actives.length>1;
+      let display;
+      if (m.special==='fatigue') display=`<span class="f${v[0]}">${v}</span>`;
+      else if (m.special==='coverage') {
+        const c=v;
+        display=c.ok?`<span style="color:var(--green)">✓ Full</span>`
+          :c.totalGaps.length?`<span style="color:var(--red)">✗ No staff: ${c.totalGaps.length} day${c.totalGaps.length>1?'s':''}</span>`
+          :`<span style="color:var(--amber)">⚠ Partial</span>`;
+      }
+      else if (m.special==='cov-day') {
+        const c=v; display=c.dayOk?`<span style="color:var(--green)">✓ All days</span>`:`<span style="color:var(--amber)">${c.dayGaps.length} gap day${c.dayGaps.length>1?'s':''}</span>`;
+      }
+      else if (m.special==='cov-night') {
+        const c=v; display=c.nightOk?`<span style="color:var(--green)">✓ All days</span>`:`<span style="color:var(--amber)">${c.nightGaps.length} gap day${c.nightGaps.length>1?'s':''}</span>`;
+      }
+      else if (m.special==='totalAll') {
+        // Use grade total if grades defined, else fallback
+        const gbd = v?.gradeBreakdown || actives[vi]?.result?.gradeBreakdown;
+        const num = gbd ? gbd.totalAllGrades : actives[vi]?.result?.totalAll;
+        display = fmtC(num || 0, w.currency);
+      }
+      else if (m.special==='headcount') {
+        const gbd = actives[vi]?.result?.gradeBreakdown;
+        display = gbd
+          ? `${gbd.totalHeadcount} / crew · ${gbd.totalHeadcount * actives[vi].r.crews} total`
+          : `${actives[vi]?.r?.empPerCrew||'—'} / crew · ${(actives[vi]?.r?.empPerCrew||0) * (actives[vi]?.r?.crews||0)} total`;
+      }
+      else display=fmtN(v);
+      html+=`<td class="${isBest&&!m.special?'best':''}">${display}${isBest&&!m.special?`<span class="badge-best">✓ best</span>`:''}</td>`;
+    });
+    html+=`</tr>`;
+  }
+  html+=`</tbody></table></div></div>`;
+
+  // 3-year projection
+  html+=`<div class="cmp-wrap"><div class="cmp-hdr">📈 3-Year Cost Projection (${w.escalationPct}% annual escalation)</div>
+    <div class="tscroll"><table><thead><tr><th>Year</th>
+    ${actives.map(({r,i})=>`<th style="color:${COLORS[i]}">${esc(r.name)||`Roster ${i+1}`}</th>`).join('')}
+    </tr></thead><tbody>`;
+  const cumulative=actives.map(()=>0);
+  for (let yr=1;yr<=3;yr++){
+    const mult=Math.pow(1+w.escalationPct/100,yr-1);
+    html+=`<tr><td style="color:var(--muted)">Year ${yr}</td>`;
+    actives.forEach(({result},ai)=>{
+      const base = result.gradeBreakdown ? result.gradeBreakdown.totalAllGrades : result.totalAll;
+      const c=Math.round(base*mult);cumulative[ai]+=c;html+=`<td>${fmtC(c,w.currency)}</td>`;
+    });
+    html+=`</tr>`;
+  }
+  html+=`<tr style="border-top:2px solid var(--border2)"><td style="color:var(--gold);font-weight:600">3-Year Total</td>`;
+  actives.forEach((_,ai)=>{html+=`<td style="font-weight:600;color:var(--gold)">${fmtC(cumulative[ai],w.currency)}</td>`;});
+  html+=`</tr></tbody></table></div></div>`;
+
+  // Cost cards
+  html+=`<div class="section-lbl">Detailed Cost &amp; Fatigue Breakdown</div><div class="cost-cards">`;
+  for (const {r,i,result} of actives){
+    const col=COLORS[i],name=esc(r.name)||`Roster ${i+1}`;
+    const tot=result.totalPerPerson;
+    const pct=v=>tot>0?Math.round(v/tot*100):0;
+    const fatC=result.fatigueLabel==='HIGH'?'var(--red)':result.fatigueLabel==='MEDIUM'?'var(--amber)':'var(--green)';
+    const recC=result.minRecovery<10?'var(--red)':result.minRecovery<11?'var(--amber)':'var(--green)';
+    const headPerCrew = result.gradeBreakdown ? result.gradeBreakdown.totalHeadcount : result.empPerCrew;
+    const staff = headPerCrew * result.crews;
+    const grandTotal = result.gradeBreakdown ? result.gradeBreakdown.totalAllGrades : result.totalAll;
+
+    html+=`<div class="cost-card"><div class="cc-hdr" style="border-left:3px solid ${col}">
+      <div class="cc-name" style="color:${col}">${name}</div>
+      <div class="cc-sub">${result.cycleLen}-day cycle · ${result.crews} crews · ${staff} staff · ${hrsLabel(result.avgPaidHrs)} paid / ${hrsLabel(result.avgGrossHrs)} gross per shift</div>
+    </div><div class="cc-body">
+
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:9px;font-family:var(--font-sans)">Per Person / Year — Cost</div>
+      ${cRow('Base pay (standard hrs)',result.basePay,pct(result.basePay),'#58a6ff',w.currency)}
+      ${cRow('Overtime pay (IDN rates)',result.otPay,pct(result.otPay),'var(--amber)',w.currency)}
+      ${cRow('PH extra (rest day rates)',result.phExtra,pct(result.phExtra),'#fb923c',w.currency)}
+      ${cRow('Night shift allowances',result.nightAllow,pct(result.nightAllow),'var(--night-text)',w.currency)}
+      ${cRow('Meal + transport allow.',result.otherAllow,pct(result.otherAllow),'var(--muted)',w.currency)}
+      ${result.bpjsAnnual?cRow('BPJS employer (10.24%)',result.bpjsAnnual,pct(result.bpjsAnnual),'var(--blue)',w.currency):''}
+      ${result.thrAnnual?cRow('THR (1× monthly salary)',result.thrAnnual,pct(result.thrAnnual),'var(--green)',w.currency):''}
+      ${cRow('Absenteeism cover cost',result.absentCost,pct(result.absentCost),'var(--red)',w.currency)}
+      <div class="cost-total"><div class="ctlbl">Total / person / year (employer cost)</div><div class="ctval" style="color:${col}">${fmtC(tot,w.currency)}</div></div>
+      <div class="cost-total" style="border-top:none;padding-top:0"><div class="ctlbl">Total — ${staff} staff / year${result.gradeBreakdown?' (grade-weighted)':''}</div><div class="ctval" style="color:${col}">${fmtC(grandTotal,w.currency)}</div></div>
+
+      ${result.takeHome ? `
+      <div class="divider"></div>
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:9px;font-family:var(--font-sans)">Employee Take-Home Pay (IDR — PPh 21 + BPJS)</div>
+      <div class="cost-row"><span class="crl">Gross annual earnings</span><span class="crv">${fmtC(result.takeHome.grossAnnual,w.currency)}</span></div>
+      <div class="cost-row"><span class="crl">Less: Employee BPJS (4%)</span><span class="crv" style="color:var(--red)">− ${fmtC(result.takeHome.empBpjsAnnual,w.currency)}</span></div>
+      <div class="cost-row"><span class="crl">Less: PPh 21 income tax (effective ${result.takeHome.effectiveTaxRate}%)</span><span class="crv" style="color:var(--red)">− ${fmtC(result.takeHome.pph21Annual,w.currency)}</span></div>
+      <div style="background:var(--panel3);border-radius:5px;padding:9px 11px;margin-top:6px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:10px;color:var(--muted);font-family:var(--font-sans)">Take-home / year</div>
+          <div style="font-size:15px;font-weight:700;color:var(--green)">${fmtC(result.takeHome.takeHomeAnnual,w.currency)}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;color:var(--muted);font-family:var(--font-sans)">Take-home / month</div>
+          <div style="font-size:15px;font-weight:700;color:var(--green)">${fmtC(result.takeHome.takeHomeMonthly,w.currency)}</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--dim);font-family:var(--font-sans);font-style:italic;margin-top:5px">PTKP TK/0 (single, no dependents) 54M IDR. Actual tax varies by status.</div>` : ''}
+
+      ${result.gradeBreakdown ? `
+      <div class="divider"></div>
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;font-family:var(--font-sans)">Cost by Pay Grade — per Crew / Year</div>
+      <table class="grade-cost-table">
+        <thead><tr>
+          <th>Grade</th><th>Salary / mo</th><th style="text-align:center">Count</th>
+          <th style="text-align:right">Cost / person</th><th style="text-align:right">Crew total</th>
+          ${w.currency==='IDR'?'<th style="text-align:right">Take-home / mo</th>':''}
+        </tr></thead>
+        <tbody>
+        ${result.gradeBreakdown.rows.filter(row=>row.count>0).map(row=>`<tr>
+          <td style="font-weight:500">${esc(row.grade.name)||'—'}</td>
+          <td style="color:var(--muted);font-family:var(--font-sans)">${fmtC(row.grade.salary,w.currency)}</td>
+          <td style="text-align:center">${row.count}</td>
+          <td style="text-align:right">${fmtC(row.costPerPerson,w.currency)}</td>
+          <td style="text-align:right;color:${col}">${fmtC(row.crewCost,w.currency)}</td>
+          ${w.currency==='IDR'&&row.takeHome?`<td style="text-align:right;color:var(--green)">${fmtC(row.takeHome.takeHomeMonthly,w.currency)}</td>`:(w.currency==='IDR'?'<td>—</td>':'')}
+        </tr>`).join('')}
+        </tbody>
+        <tfoot><tr>
+          <td colspan="2">Total per crew / year</td>
+          <td style="text-align:center">${result.gradeBreakdown.totalHeadcount}</td>
+          <td></td>
+          <td style="text-align:right;color:var(--gold)">${fmtC(result.gradeBreakdown.totalCrewCost,w.currency)}</td>
+          ${w.currency==='IDR'?'<td></td>':''}
+        </tr>
+        <tr>
+          <td colspan="4">All ${r.crews} crews — grand total / year</td>
+          <td style="text-align:right;color:var(--gold)">${fmtC(result.gradeBreakdown.totalAllGrades,w.currency)}</td>
+          ${w.currency==='IDR'?'<td></td>':''}
+        </tr></tfoot>
+      </table>` : ''}
+
+      <div class="divider"></div>
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:7px;font-family:var(--font-sans)">Hours &amp; Travel Summary</div>
+      <div class="cost-row"><span class="crl">Total paid hrs / yr</span><span class="crv">${fmtN(result.totalPaidHoursYear)} hrs</span></div>
+      <div class="cost-row"><span class="crl">Total gross (on-site) hrs / yr</span><span class="crv">${fmtN(result.totalGrossHoursYear)} hrs</span></div>
+      <div class="cost-row"><span class="crl">Annual commute</span><span class="crv" style="color:var(--blue)">${fmtN(result.totalCommuteHoursYear)} hrs (${Math.round(result.travelTimeMin)} min each way)</span></div>
+      <div class="cost-row"><span class="crl">Avg away from home / shift day</span><span class="crv" style="color:${recC}">${hrsLabel(result.avgAwayFromHome)}</span></div>
+      <div class="cost-row" style="border-bottom:none"><span class="crl">Min recovery window</span><span class="crv" style="color:${recC}">${hrsLabel(result.minRecovery)} ${result.minRecovery<10?'⚠ INADEQUATE':result.minRecovery<11?'↗ Marginal':'✓ OK'}</span></div>
+
+      <div class="divider"></div>
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:7px;font-family:var(--font-sans)">Training, Overlap &amp; Leave Opportunity</div>
+      <div class="cost-row"><span class="crl">Overlap / handover days per year</span><span class="crv" style="color:var(--blue)">${fmtN(result.overlapDaysYear)} days</span></div>
+      <div class="cost-row"><span class="crl">Training &amp; AL windows per cycle</span><span class="crv" style="color:var(--green)">${result.trainingWindowsPerCycle} window${result.trainingWindowsPerCycle!==1?'s':''}</span></div>
+      <div class="cost-row"><span class="crl">Longest consecutive off block</span><span class="crv" style="color:${result.maxOffRunLen>=7?'var(--green)':result.maxOffRunLen>=4?'var(--amber)':'var(--muted)'}">${result.maxOffRunLen} days ${result.maxOffRunLen>=12?'— full AL fits':''}${result.maxOffRunLen>=5&&result.maxOffRunLen<12?'— AL with split':''}${result.maxOffRunLen<5?'— short, AL requires split':''}</span></div>
+      <div class="cost-row" style="border-bottom:none"><span class="crl">Off-block windows ≥ 2 days / yr</span><span class="crv" style="color:var(--green)">${fmtN(result.trainingDaysPerYear)} days suitable for training / housekeeping / AL</span></div>
+      <div style="background:var(--panel3);border-radius:4px;padding:7px 9px;margin-top:6px;font-size:10px;color:var(--muted);font-family:var(--font-sans)">
+        ${result.overlapDaysInCycle > 0
+          ? `<span style="color:var(--blue)">↔ ${result.overlapDaysInCycle} overlap day${result.overlapDaysInCycle>1?'s':''} per cycle</span> — crew handover windows suitable for joint briefings, competency sign-offs, safety inductions and housekeeping tasks.`
+          : 'No crew overlap days in this cycle — all training must occur within off blocks.'}
+        ${result.maxOffRunLen >= 5 ? ` Longest off block (${result.maxOffRunLen} days) supports structured training programs and annual leave scheduling.` : ''}
+      </div>
+
+      <div class="fat-block fat-${result.fatigueLabel}">
+        <div style="font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:.06em;margin-bottom:5px;font-family:var(--font-sans)">Fatigue Risk Score</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div><div class="fat-badge" style="color:${fatC}">${result.fatigueLabel}</div>
+          <div class="fat-detail">Score: ${result.fatigueScore}/13</div></div>
+          <div style="text-align:right;font-size:10px;color:var(--muted);font-family:var(--font-sans)">
+            <div>Max ${result.maxConsOn} consecutive on</div>
+            <div>${Math.round(result.nightFrac*100)}% night shifts</div>
+            <div>${hrsLabel(result.avgPaidHrs)} avg paid hrs/shift</div>
+            <div>${hrsLabel(result.minRecovery)} min recovery window</div>
+          </div>
+        </div>
+      </div>
+    </div></div>`;
+  }
+  html+=`</div>`;
+
+  // ─── Charts section ───
+  html += `<div class="section-lbl">Charts &amp; Visualisations</div>`;
+
+  // Crew rotation heatmaps
+  actives.forEach(({r,i,result}) => {
+    const col = COLORS[i];
+    const name = esc(r.name) || `Roster ${i+1}`;
+    html += `<div class="chart-wrap" style="margin-bottom:14px">
+      <div class="chart-hdr">
+        <span style="color:${col}">⬛ Crew Rotation — ${name}</span>
+        <span class="chart-sub">${result.crews} crews · ${result.cycleLen}-day cycle · each row = one crew's schedule</span>
+      </div>
+      <div class="chart-body">
+        <div class="heatmap-scroll"><div class="heatmap" id="hmap-${i}"></div></div>
+      </div>
+    </div>`;
+  });
+
+  // Cost bar + Fatigue radar side by side
+  html += `<div class="charts-row">
+    <div class="chart-wrap" style="margin-bottom:0">
+      <div class="chart-hdr">💰 Cost Breakdown per Person / Year</div>
+      <div class="chart-body">
+        <div id="chart-cost-legend" style="margin-bottom:8px;line-height:2"></div>
+        <div class="canvas-wrap" style="height:${Math.max(80, actives.length*50+40)}px">
+          <canvas id="chart-cost"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="chart-wrap" style="margin-bottom:0">
+      <div class="chart-hdr">
+        <span>🕸 Fatigue Risk Components</span>
+        <span class="chart-sub">Higher = worse</span>
+      </div>
+      <div class="chart-body">
+        <div style="display:flex;gap:12px;margin-bottom:8px;flex-wrap:wrap">
+          ${actives.map(({r,i})=>`<span style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);font-family:var(--font-sans)">
+            <span style="width:12px;height:3px;background:${COLORS[i]};display:inline-block;border-radius:2px"></span>${esc(r.name)||`Roster ${i+1}`}</span>`).join('')}
+        </div>
+        <div class="canvas-wrap" style="height:260px"><canvas id="chart-radar"></canvas></div>
+      </div>
+    </div>
+  </div>`;
+
+  panel.innerHTML = html;
+  // Defer chart init until DOM is updated
+  setTimeout(() => renderCharts(actives), 50);
+}
+
+function cRow(label,value,barPct,barColor,currency){
+  return `<div>
+    <div class="cost-row"><span class="crl">${label}</span><span class="crv">${fmtC(value,currency)}</span></div>
+    <div class="bar-bg"><div class="bar-fill" style="width:${barPct}%;background:${barColor}"></div></div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════
+// AI ANALYSIS
+// ════════════════════════════════════════════════════════════
+const isLocal = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+function initAIPanel() {
+  const keyRow = document.getElementById('ai-key-row');
+  const sub = document.getElementById('ai-hdr-sub');
+  if (isLocal) {
+    if (keyRow) keyRow.style.display = 'block';
+    if (sub) sub.textContent = 'Running locally — enter your API key below to use AI analysis';
+  }
+}
+
+function selectAIRoster(i){state.aiSelectedRoster=i;renderResults();}
+
+async function runAI(){
+  const idx=state.aiSelectedRoster;
+  const roster=state.rosters[idx];
+  const result=analyzeRoster(roster,state.wage);
+  if (!result){alert('Selected roster has no valid pattern.');return;}
+  const out=document.getElementById('ai-output');
+  out.innerHTML='<span class="ai-loading">Analysing with Claude… 10–20 seconds…</span>';
+
+  // Build per-type shift details string
+  const typeStr=result.usedTypes.map(t=>{
+    const sd=result.typeDetails[t];
+    return `${SHIFT_LABELS[t]}: ${sd.start}–${sd.end} (${hrsLabel(sd.gross)} gross, ${hrsLabel(sd.paid)} paid, ${hrsLabel(sd.recovery)} recovery window, ${hrsLabel(sd.awayFromHome)} total away from home)`;
+  }).join('\n  ');
+
+  const prompt=`You are an expert in occupational health, shift work physiology, fatigue science, and mining operations safety.
+
+Analyse this shift roster for fatigue risk, health impacts, and efficiency. Provide a concise, specific, evidence-based analysis.
+
+ROSTER: ${roster.name||'Unnamed'}
+Pattern (${result.cycleLen}-day cycle): ${result.patStr}
+Crews: ${result.crews} | Employees per crew: ${result.empPerCrew} | Total: ${result.crews*result.empPerCrew}
+
+SHIFT DETAILS:
+  ${typeStr}
+  Unpaid break per shift: ${roster.unpaidBreakMin} min
+  Travel time (one-way): ${roster.travelTimeMin} min
+  Round-trip commute per shift day: ${hrsLabel(roster.travelTimeMin*2/60)}
+
+ANNUAL SUMMARY:
+  Days worked: ${result.daysOnYear} | Days off: ${result.daysOffYear}
+  Total paid hours: ${fmtN(result.totalPaidHoursYear)} hrs | Total on-site: ${fmtN(result.totalGrossHoursYear)} hrs
+  Annual commute: ${fmtN(result.totalCommuteHoursYear)} hrs (${(result.totalCommuteHoursYear/24).toFixed(1)} equivalent days)
+  Night shifts: ${result.nightsYear} (${Math.round(result.nightFrac*100)}% of working shifts)
+  Max consecutive days on: ${result.maxConsOn} | Max consecutive days off: ${result.maxConsOff}
+  Average away from home per shift day: ${hrsLabel(result.avgAwayFromHome)}
+  Minimum recovery window between shifts: ${hrsLabel(result.minRecovery)}
+  Weekend/rest-day shifts: ${result.weekendDaysYear} per year
+
+TRAINING & OPERATIONAL OPPORTUNITY:
+  Crew overlap / handover days per cycle: ${result.overlapDaysInCycle} (${result.overlapDaysYear}/yr) — suitable for joint briefings, competency sign-offs, housekeeping
+  Training & AL windows per cycle: ${result.trainingWindowsPerCycle} off-block windows of ≥2 consecutive days
+  Longest consecutive off block: ${result.maxOffRunLen} days
+  Total training-eligible off days per year: ${result.trainingDaysPerYear} days
+
+FATIGUE SCORE: ${result.fatigueScore}/13 — ${result.fatigueLabel}
+
+Provide analysis under these headings (keep total under 550 words):
+
+1. RECOVERY & CIRCADIAN IMPACT
+Assess the ${hrsLabel(result.minRecovery)} minimum recovery window against ILO's 11-hour guideline. How does the ${roster.travelTimeMin}-min commute compound this? Comment on the circadian disruption pattern from ${Math.round(result.nightFrac*100)}% night shifts.
+
+2. FATIGUE RISK — CONSECUTIVE DAYS
+Assess the impact of the ${result.maxConsOn}-day maximum consecutive working stretch. Reference the FAID (Fatigue Audit InterDyne) model or similar shift fatigue research for a 12-hour mining context.
+
+3. LONG-TERM HEALTH IMPACTS
+Specific risks relevant to this pattern: cardiovascular, metabolic syndrome, sleep disorder probability, musculoskeletal load from extended shifts. Cite studies where applicable.
+
+4. EFFICIENCY & ERROR WINDOWS
+When in this cycle are errors and incidents most likely? Consider shift-end alertness degradation, night shift cognitive impairment, and post-consecutive-days fatigue.
+
+5. SICKNESS ABSENCE PREDICTION
+Estimate annual sick days per person for this pattern vs the mining industry benchmark (~8–12 days/yr). Factor in night shift burden and consecutive days.
+
+6. RECOMMENDATIONS
+Three specific, practical changes to this roster pattern that would meaningfully improve fatigue outcomes without eliminating 24/7 coverage. Be concrete — suggest specific day counts or pattern changes.`;
+
+  try{
+    let text;
+    if (isLocal) {
+      // Local: call Anthropic directly with user-supplied key
+      const key = (document.getElementById('ai-key')||{}).value?.trim();
+      if (!key) {
+        out.innerHTML='<span style="color:var(--amber)">Running locally — enter your Anthropic API key in the field above to use AI analysis.</span>';
+        return;
+      }
+      const resp=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
+        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,messages:[{role:'user',content:prompt}]})
+      });
+      const data=await resp.json();
+      if (data.error) throw new Error(data.error.message);
+      text=data.content?.map(c=>c.text||'').join('\n')||'No response.';
+    } else {
+      // Hosted on Netlify: use the proxy function
+      const resp=await fetch('/.netlify/functions/claude',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({prompt})
+      });
+      const data=await resp.json();
+      if (!resp.ok) throw new Error(data.error||'Server error');
+      text=data.text||'No response.';
+    }
+    out.innerHTML=`<div style="font-family:var(--font-sans);font-size:12px;line-height:1.8;white-space:pre-wrap">${text}</div>`;
+  }catch(err){
+    out.innerHTML=`<span style="color:var(--red)">Error: ${esc(err.message)}</span>`;
+  }
+}
+
+async function callClaude(prompt) {
+  if (isLocal) {
+    const key = (document.getElementById('ai-key')||{}).value?.trim();
+    if (!key) throw new Error('Running locally — enter your API key in the field above.');
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1400,messages:[{role:'user',content:prompt}]})
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+    return data.content?.map(c=>c.text||'').join('\n')||'No response.';
+  } else {
+    const resp = await fetch('/.netlify/functions/claude',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({prompt})
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error||'Server error');
+    return data.text||'No response.';
+  }
+}
+
+async function runAICompare() {
+  const out = document.getElementById('ai-compare-output');
+  const actives = state.rosters
+    .map((r,i) => ({r, i, result: r.enabled && getPattern(r).length ? analyzeRoster(r, state.wage) : null}))
+    .filter(x => x.result);
+
+  if (actives.length < 1) {
+    out.innerHTML = '<span style="color:var(--amber)">Enable at least one roster to run a comparison.</span>';
+    return;
+  }
+
+  out.innerHTML = '<span class="ai-loading">Comparing rosters with Claude… 15–25 seconds…</span>';
+
+  const w = state.wage;
+  const cur = w.currency;
+
+  const rosterSummaries = actives.map(({r, i, result}) => {
+    const gb = result.gradeBreakdown;
+    const totalCost = gb ? gb.totalAllGrades : result.totalAll;
+    const staff = gb ? gb.totalHeadcount * result.crews : result.empPerCrew * result.crews;
+    const cov = result.coverage;
+    const covStatus = cov.ok ? 'Full 24/7 coverage' : cov.totalGaps.length ? `GAPS — no staff on ${cov.totalGaps.length} days of cycle` : `Partial gaps — day: ${cov.dayGaps.length} days, night: ${cov.nightGaps.length} days`;
+    return `
+ROSTER ${i+1}: ${r.name || 'Unnamed'}
+  Pattern: ${result.patStr} (${result.cycleLen}-day cycle)
+  Crews: ${result.crews} | Total staff: ${staff}
+  Shift: ${hrsLabel(result.avgGrossHrs)} gross / ${hrsLabel(result.avgPaidHrs)} paid per shift
+  Travel: ${roster_travelMin(r)} min each way | Min recovery: ${hrsLabel(result.minRecovery)}
+  Days worked/yr: ${result.daysOnYear} | Days off/yr: ${result.daysOffYear}
+  Night shifts/yr: ${result.nightsYear} (${Math.round(result.nightFrac*100)}%)
+  Max consecutive on: ${result.maxConsOn} | Max consecutive off: ${result.maxConsOff}
+  Weekend/rest day shifts/yr: ${result.weekendDaysYear}
+  Annual commute: ${fmtN(result.totalCommuteHoursYear)} hrs
+  Coverage: ${covStatus}
+  Fatigue score: ${result.fatigueScore}/13 — ${result.fatigueLabel}
+  Overlap/handover days per cycle: ${result.overlapDaysInCycle} (${result.overlapDaysYear}/yr)
+  Training & AL windows per cycle: ${result.trainingWindowsPerCycle} | Longest off block: ${result.maxOffRunLen} days
+  Total training-eligible days/yr: ${result.trainingDaysPerYear}
+  Total annual cost (all staff): ${fmtC(totalCost, cur)}
+  Cost per person/yr: ${fmtC(result.totalPerPerson, cur)}
+  ${result.takeHome ? `Employee take-home/month: ${fmtC(result.takeHome.takeHomeMonthly, cur)}` : ''}
+  ${gb ? `Grade breakdown: ${gb.rows.filter(row=>row.count>0).map(row=>`${row.grade.name} x${row.count} @ ${fmtC(row.grade.salary,cur)}/mo`).join(', ')}` : ''}`;
+  }).join('\n');
+
+  function roster_travelMin(r) { return r.travelTimeMin || 0; }
+
+  const prompt = `You are an expert in mining operations workforce planning, occupational health, fatigue science, and Indonesian labour law.
+
+Compare the following ${actives.length} shift roster option${actives.length>1?'s':''} for a gold processing plant (Toka Tindung, North Sulawesi, Indonesia). The operation runs 24/7 continuous processing.
+
+${rosterSummaries}
+
+CURRENCY: ${cur} | Work week standard: ${w.workWeekDays}-day | Night allowance multiplier: ${w.nightAllowMult}x
+
+Provide a structured comparison under these headings (keep total under 700 words, be specific and practical):
+
+1. FINANCIAL COMPARISON
+Compare total annual labour costs. Which roster is most cost-effective and why? Factor in overtime rates (PP 35/2021), BPJS, THR, and night allowances. Note any significant cost drivers.
+
+2. 24/7 COVERAGE ASSESSMENT
+Assess each roster's ability to maintain continuous plant coverage. Flag any gaps or risks. Which roster provides the most reliable coverage with the least risk of undermanning?
+
+3. FATIGUE & HEALTH COMPARISON
+Compare fatigue profiles: consecutive days, recovery windows, night shift burden, commute load. Which roster poses the greatest long-term health risk to workers? Reference shift work research where relevant.
+
+4. TRAINING, HOUSEKEEPING & LEAVE OPPORTUNITY
+Compare overlap/handover days and off-block structure. Which roster best supports: (a) crew overlap for joint briefings and competency sign-offs, (b) structured training windows, (c) annual leave scheduling without disrupting coverage? Note that overlap days and longer off blocks are a positive operational feature, not just a cost.
+
+5. OVERALL RECOMMENDATION
+Give a clear recommendation on which roster best balances cost, coverage, worker wellbeing, and operational opportunity (training/AL) for a gold processing context in Indonesia. If none is ideal, suggest the best starting point and what to modify.`;
+
+  try {
+    const text = await callClaude(prompt);
+    out.innerHTML = `<div style="font-family:var(--font-sans);font-size:12px;line-height:1.8;white-space:pre-wrap">${text}</div>`;
+  } catch(err) {
+    out.innerHTML = `<span style="color:var(--red)">Error: ${esc(err.message)}</span>`;
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// STATE UPDATERS
+// ════════════════════════════════════════════════════════════
+function copyTimesFromFirst(idx) {
+  const src = state.rosters[0];
+  const dst = state.rosters[idx];
+  dst.shiftTimes = JSON.parse(JSON.stringify(src.shiftTimes));
+  dst.unpaidBreakMin = src.unpaidBreakMin;
+  dst.travelTimeMin = src.travelTimeMin;
+  renderAll();
+}
+
+function addGrade() {
+  state.grades.push(makeGrade('', 0));
+  renderAll();
+}
+function deleteGrade(gi) {
+  const id = state.grades[gi].id;
+  state.grades.splice(gi, 1);
+  // Remove from all roster headcounts
+  state.rosters.forEach(r => { if (r.gradeHeadcount) delete r.gradeHeadcount[id]; });
+  renderAll();
+}
+function updateGrade(gi, key, val) {
+  state.grades[gi][key] = val;
+  renderAll();
+}
+function updateGradeHeadcount(rosterIdx, gradeId, count) {
+  if (!state.rosters[rosterIdx].gradeHeadcount) state.rosters[rosterIdx].gradeHeadcount = {};
+  state.rosters[rosterIdx].gradeHeadcount[gradeId] = count;
+  // Keep empPerCrew in sync with total grade headcount
+  state.rosters[rosterIdx].empPerCrew = state.grades.reduce((s,g) =>
+    s + ((state.rosters[rosterIdx].gradeHeadcount[g.id]) || 0), 0) || 1;
+  renderAll();
+}
+
+function updateWage(key,val){state.wage[key]=val;renderAll();}
+function updateRoster(i,key,val){state.rosters[i][key]=val;renderAll();}
+function updateShiftTime(i,type,field,val){
+  if (!state.rosters[i].shiftTimes) state.rosters[i].shiftTimes={D:{start:'06:00',end:'18:00'},N:{start:'18:00',end:'06:00'},S:{start:'06:00',end:'18:00'}};
+  if (!state.rosters[i].shiftTimes[type]) state.rosters[i].shiftTimes[type]={start:'06:00',end:'18:00'};
+  state.rosters[i].shiftTimes[type][field]=val;
+  renderAll();
+}
+function addBlock(i){state.rosters[i].blocks.push({type:'O',days:3});renderAll();}
+function deleteBlock(i,bi){state.rosters[i].blocks.splice(bi,1);renderAll();}
+function moveBlock(i,bi,dir){const b=state.rosters[i].blocks,ni=bi+dir;if(ni<0||ni>=b.length)return;[b[bi],b[ni]]=[b[ni],b[bi]];renderAll();}
+function updateBlock(i,bi,key,val){state.rosters[i].blocks[bi][key]=val;renderAll();}
+
+function syncHourly(){
+  const m=+document.getElementById('w-monthly').value;
+  state.wage.monthlySalary=m;
+  const el=document.getElementById('w-hourly');
+  if (el) el.value=Math.round(m/173);
+  renderAll(); // debounced — safe
+}
+
+function updateOTDisplay(){
+  const ww=state.wage.workWeekDays;
+  const std=ww===5?8:7;
+  const el=document.getElementById('ot-std');
+  if (el) el.textContent=`1–${std} (standard)`;
+  const r1=document.getElementById('rd-1'),r2=document.getElementById('rd-2'),r3=document.getElementById('rd-3');
+  if (r1) r1.textContent=`Hours 1–${ww===5?8:7}`;
+  if (r2) r2.textContent=`Hour ${ww===5?9:8}`;
+  if (r3) r3.textContent=`Hour ${ww===5?10:9}+`;
+}
+
+function toggleSection(id){
+  document.getElementById('body-'+id).classList.toggle('open');
+  document.getElementById('arr-'+id).classList.toggle('open');
+}
+
+function switchTab(tab){
+  state.tab=tab;
+  document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('active',p.id===`pane-${tab}`));
+  document.querySelectorAll('.tab-btn').forEach(b=>{
+    const tmap={'config':'Configure','results':'Results','pay':'Pay','law':'Law'};
+    b.classList.toggle('active',b.textContent.includes(tmap[tab]));
+  });
+  if (tab==='results') renderResults();
+  if (tab==='pay') { renderBandPicker(); renderPayAllowances(); calcPay(); }
+}
+
+let _renderTimer = null;
+function renderAll(){
+  // Debounce: defer actual DOM rebuild to next tick so any in-progress
+  // browser event (blur, input) finishes before the node is removed.
+  clearTimeout(_renderTimer);
+  _renderTimer = setTimeout(_doRenderAll, 0);
+}
+
+function _doRenderAll(){
+  renderGradeSetup();
+  renderSalaryBands();
+  renderRosterCards();
+  if (state.tab==='results') renderResults();
+  const active=state.rosters.filter(r=>r.enabled&&getPattern(r).length).length;
+  const el=document.getElementById('tab-results');
+  if (el) el.textContent=`📊 Results${active?` (${active})`:''}`;
+  autoSave();
+}
+
+// ════════════════════════════════════════════════════════════
+// CHARTS
+// ════════════════════════════════════════════════════════════
+let chartInstances = {};
+
+function destroyCharts() {
+  Object.values(chartInstances).forEach(c => { try { c.destroy(); } catch(e){} });
+  chartInstances = {};
+}
+
+function renderCharts(actives) {
+  destroyCharts();
+  if (!actives.length) return;
+  if (typeof Chart === 'undefined') return;
+
+  const w = state.wage;
+  const CHART_COLORS = ['#c9a227','#58a6ff','#3fb950'];
+
+  // ─── 1. Crew Rotation Heatmap ───
+  actives.forEach(({r, i, result}) => {
+    const el = document.getElementById(`hmap-${i}`);
+    if (!el) return;
+    const pattern = getPattern(r).split('');
+    const n = pattern.length;
+    const crews = r.crews;
+    const offset = n / crews;
+    const showDays = Math.min(n, 56);
+
+    // Day number header
+    let html = `<div class="hmap-row"><div class="hmap-crew"></div><div class="hmap-cells">`;
+    for (let d = 0; d < showDays; d++) {
+      html += `<div class="hmap-day">${d+1}</div>`;
+    }
+    html += (n > showDays ? `<div class="hmap-day" style="color:var(--dim)">…</div>` : '') + `</div></div>`;
+
+    // Each crew row
+    for (let c = 0; c < crews; c++) {
+      html += `<div class="hmap-row"><div class="hmap-crew">Crew ${String.fromCharCode(65+c)}</div><div class="hmap-cells">`;
+      for (let d = 0; d < showDays; d++) {
+        const idx = Math.round(((d - c * offset) % n + n) % n);
+        const sh = pattern[idx];
+        const isDay = sh==='D'||sh==='S';
+        const isNight = sh==='N';
+        const bg = isDay?'#78350f':isNight?'#2e1065':'#1f2937';
+        const col = isDay?'#fcd34d':isNight?'#c4b5fd':'#4b5563';
+        const bd = isDay?'1px solid #92400e':isNight?'1px solid #4c1d95':'1px solid #374151';
+        html += `<div class="hmap-cell" style="background:${bg};color:${col};border:${bd}" title="Crew ${String.fromCharCode(65+c)}, Day ${d+1}: ${SHIFT_LABELS[sh]||sh}">${sh}</div>`;
+      }
+      if (n > showDays) html += `<div class="hmap-cell" style="background:transparent;color:var(--dim)">…</div>`;
+      html += `</div></div>`;
+    }
+    html += `<div class="hmap-legend">
+      <span><span class="hmap-leg-dot" style="background:#78350f;border:1px solid #92400e"></span>Day</span>
+      <span><span class="hmap-leg-dot" style="background:#2e1065;border:1px solid #4c1d95"></span>Night</span>
+      <span><span class="hmap-leg-dot" style="background:#1f2937;border:1px solid #374151"></span>Off</span>
+      <span style="margin-left:8px;color:var(--dim)">Offset: ${offset.toFixed(1)} days between crews</span>
+    </div>`;
+    el.innerHTML = html;
+  });
+
+  // ─── 2. Cost Breakdown Stacked Horizontal Bar ───
+  const costEl = document.getElementById('chart-cost');
+  if (costEl && actives.length) {
+    const labels = actives.map(({r,i}) => r.name || `Roster ${i+1}`);
+    const toM = v => +(v/1000000).toFixed(2); // to millions for IDR readability
+    const useM = w.currency === 'IDR';
+    const scale = useM ? 1000000 : 1;
+    const sfx = useM ? 'M' : '';
+
+    chartInstances['cost'] = new Chart(costEl, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label:'Base Pay',          data: actives.map(({result})=>+(result.basePay/scale).toFixed(0)),      backgroundColor:'#1d4ed8' },
+          { label:'Overtime',          data: actives.map(({result})=>+(result.otPay/scale).toFixed(0)),        backgroundColor:'#f59e0b' },
+          { label:'PH Extra',          data: actives.map(({result})=>+(result.phExtra/scale).toFixed(0)),      backgroundColor:'#fb923c' },
+          { label:'Night Allow.',      data: actives.map(({result})=>+(result.nightAllow/scale).toFixed(0)),   backgroundColor:'#7c3aed' },
+          { label:'Meal+Transport',    data: actives.map(({result})=>+(result.otherAllow/scale).toFixed(0)),   backgroundColor:'#374151' },
+          { label:'BPJS',              data: actives.map(({result})=>+(result.bpjsAnnual/scale).toFixed(0)),   backgroundColor:'#0e7490' },
+          { label:'THR',               data: actives.map(({result})=>+(result.thrAnnual/scale).toFixed(0)),    backgroundColor:'#166534' },
+          { label:'Absenteeism',       data: actives.map(({result})=>+(result.absentCost/scale).toFixed(0)),   backgroundColor:'#7f1d1d' },
+        ]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.dataset.label}: ${fmtC(ctx.raw * scale, w.currency)}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            stacked: true,
+            ticks: { color:'#7d8590', font:{size:10}, callback: v => useM ? `${(v/1).toFixed(0)}${sfx}` : fmtN(v) },
+            grid: { color:'#21262d' }
+          },
+          y: { stacked: true, ticks: { color:'#e6edf3', font:{size:11} }, grid:{ display:false } }
+        }
+      }
+    });
+
+    // Build custom legend
+    const legendEl = document.getElementById('chart-cost-legend');
+    if (legendEl) {
+      legendEl.innerHTML = ['#1d4ed8','#f59e0b','#fb923c','#7c3aed','#374151','#0e7490','#166534','#7f1d1d']
+        .map((col,i)=>{
+          const labels2=['Base Pay','Overtime','PH Extra','Night Allow.','Meal+Trans','BPJS','THR','Absenteeism'];
+          return `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px">
+            <span style="width:10px;height:10px;border-radius:2px;background:${col};display:inline-block"></span>
+            <span style="font-size:10px;color:var(--muted);font-family:var(--font-sans)">${labels2[i]}</span>
+          </span>`;
+        }).join('');
+    }
+  }
+
+  // ─── 3. Fatigue Radar ───
+  const radarEl = document.getElementById('chart-radar');
+  if (radarEl && actives.length) {
+    // Normalise each component to 0–100
+    const components = ['Consecutive Days','Night Shift %','Shift Length','Recovery Window','Weekend Shifts'];
+    const normalize = result => [
+      Math.min(100, result.maxConsOn / 12 * 100),
+      result.nightFrac * 100,
+      Math.min(100, (result.avgPaidHrs - 7) / 5 * 100),
+      Math.max(0, 100 - (result.minRecovery - 8) / 6 * 100),
+      Math.min(100, result.weekendDaysYear / 104 * 100),
+    ];
+
+    const radarColors = ['rgba(201,162,39,0.25)','rgba(88,166,255,0.25)','rgba(63,185,80,0.25)'];
+    const radarBorders = ['#c9a227','#58a6ff','#3fb950'];
+
+    chartInstances['radar'] = new Chart(radarEl, {
+      type: 'radar',
+      data: {
+        labels: components,
+        datasets: actives.map(({r,i,result}) => ({
+          label: r.name || `Roster ${i+1}`,
+          data: normalize(result),
+          backgroundColor: radarColors[i],
+          borderColor: radarBorders[i],
+          borderWidth: 2,
+          pointBackgroundColor: radarBorders[i],
+          pointRadius: 3,
+        }))
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.dataset.label}: ${Math.round(ctx.raw)}% of max risk`
+            }
+          }
+        },
+        scales: {
+          r: {
+            min: 0, max: 100,
+            ticks: { display: false, stepSize: 25 },
+            grid: { color: '#21262d' },
+            pointLabels: { color: '#7d8590', font: { size: 10 } },
+            angleLines: { color: '#21262d' }
+          }
+        }
+      }
+    });
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// BENCHMARKS
+// ════════════════════════════════════════════════════════════
+function renderBenchmarks(){
+  const bms=[
+    {n:'FIFO 8-6 (12hr)',p:'DDDDDDDDOOOOOO',d:'8 on / 6 off · Iron ore WA'},
+    {n:'FIFO 14-7',p:'DDDDDDDDDDDDDDOOOOOOO',d:'14 on / 7 off · QLD coal & gold'},
+    {n:'FIFO 7-7 Rotating',p:'DDDNNNOOODDDNNN',d:'7 on / 7 off · Day/night balance'},
+    {n:'DIDO 5-2 (8hr)',p:'DDDDDOO',d:'5 on / 2 off · Surface day workers'},
+    {n:'Panama 4-crew',p:'DDDOONNNODDDDOOONNN',d:'4-crew continuous · Process plant'},
+    {n:'DuPont 28-day',p:'NNNNOOONNNNOOODDDDOOODNNN',d:'DuPont rotating · 24/7 continuous'},
+  ];
+  const g=document.getElementById('bm-grid');
+  if (!g) return;
+  g.innerHTML=bms.map(b=>{
+    const p=b.p.split('');
+    const on=p.filter(c=>c!=='O').length,off=p.filter(c=>c==='O').length;
+    return `<div class="bm-card">
+      <div class="bm-name">${b.n}</div>
+      <div class="bm-pat">${b.p.slice(0,18)}${b.p.length>18?'…':''}</div>
+      <div class="bm-stat">${b.d}</div>
+      <div class="bm-stat mt8">${on} on / ${off} off · ${p.length}-day cycle</div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+// ARCHI TOKA SALARY BANDS
+// ════════════════════════════════════════════════════════════
+const SALARY_BANDS = [
+  { band:'1', min:4.2, mid:5.3, max:6.6, roles:'Field Assistant, Admin, Driver, Helper, Clerk, Technician, General Helper' },
+  { band:'2', min:4.6, mid:6.2, max:7.7, roles:'Operator, Welder, Rigger, Account Payable' },
+  { band:'3', min:7.1, mid:9.5, max:11.8, roles:'Leading Hand, Sr Operator' },
+  { band:'H', min:9.2, mid:12.3, max:15.4, roles:'Officer, Supervisor, Coordinator, Jr Engineer, Trainer' },
+  { band:'G', min:15.2, mid:20.3, max:25.3, roles:'Analyst, Engineer, Sr Supervisor' },
+  { band:'F', min:24.5, mid:32.7, max:41.0, roles:'Sr Engineer, Specialist, Supt' },
+  { band:'E', min:38.8, mid:51.7, max:64.7, roles:'Sr Supt' },
+  { band:'D', min:52.4, mid:69.9, max:87.4, roles:'Dept Head, Manager, Group Head' },
+];
+
+function renderSalaryBands() {
+  if (!gradesSectionUnlocked) return;
+  const tbody = document.getElementById('salary-bands-body');
+  if (!tbody) return;
+  tbody.innerHTML = SALARY_BANDS.map((b, i) => `
+    <tr style="border-bottom:1px solid var(--border);${i%2===0?'background:var(--panel2)':''}">
+      <td style="padding:6px 10px;font-weight:700;color:var(--gold);font-family:var(--font-mono)">Band ${b.band}</td>
+      <td style="padding:6px 10px;text-align:right;color:var(--muted);font-family:var(--font-mono)">${b.min.toFixed(1)}M</td>
+      <td style="padding:6px 10px;text-align:right;font-weight:700;color:var(--text);font-family:var(--font-mono)">${b.mid.toFixed(1)}M</td>
+      <td style="padding:6px 10px;text-align:right;color:var(--muted);font-family:var(--font-mono)">${b.max.toFixed(1)}M</td>
+      <td style="padding:6px 10px;color:var(--muted);font-family:var(--font-sans);font-size:11px">${b.roles}</td>
+      <td style="padding:6px 10px;text-align:center">
+        <button class="add-block" style="width:auto;padding:3px 10px;font-size:10px;border-style:solid"
+          onclick="addGradeFromBand(${i})" title="Add Band ${b.band} at midpoint (${b.mid}M IDR)">+</button>
+      </td>
+    </tr>`).join('');
+}
+
+function addGradeFromBand(i) {
+  const b = SALARY_BANDS[i];
+  state.grades.push(makeGrade(`Band ${b.band} — ${b.roles.split(',')[0].trim()}`, Math.round(b.mid * 1000000)));
+  renderAll();
+  // Scroll to grade table
+  document.getElementById('grade-table-wrap')?.scrollIntoView({behavior:'smooth', block:'nearest'});
+  showStatus(`Band ${b.band} added at midpoint ${b.mid}M IDR`);
+}
+
+// ════════════════════════════════════════════════════════════
+// PAY CALCULATOR ENGINE
+// ════════════════════════════════════════════════════════════
+const PTKP_VALUES = {
+  TK0: 54000000, K0: 58500000, K1: 63000000, K2: 67500000, K3: 72000000
+};
+
+const pc = {
+  name:'', selectedBand:null, salaryPoint:'mid',
+  salary:9500000, sliderPct:50,
+  workWeekDays:5, ptkp:'TK0', empType:'PKWTT',
+  daysPerMonth:19, shiftGrossHrs:13, unpaidBreakMin:60,
+  nightShiftsMonth:7, restDayShiftsMonth:4, phShiftsMonth:1,
+  otBuiltIn:false, otHrsPerShift:4, otShiftsMonth:15,
+  nightMult:1.2, mealAllow:50000, transAllow:30000,
+  extraAllowances:[],
+};
+
+function renderBandPicker() {
+  const wrap = document.getElementById('pay-band-picker');
+  if (!wrap) return;
+  wrap.innerHTML = SALARY_BANDS.map((b,i) =>
+    `<button class="band-btn ${pc.selectedBand===i?'active':''}" onclick="selectPayBand(${i})">Band ${b.band}</button>`
+  ).join('');
+}
+
+function selectPayBand(i) {
+  pc.selectedBand = i;
+  pc.salaryPoint = document.getElementById('pay-point')?.value || 'mid';
+  applyBandPoint();
+  renderBandPicker();
+  updateSliderLabels();
+  calcPay();
+}
+
+function applyBandPoint() {
+  if (pc.selectedBand === null) return;
+  const b = SALARY_BANDS[pc.selectedBand];
+  const pt = pc.salaryPoint;
+  const salary = pt==='min'?b.min:pt==='max'?b.max:b.mid;
+  if (pt !== 'custom') {
+    pc.salary = Math.round(salary * 1000000);
+    const el = document.getElementById('pay-salary');
+    if (el) el.value = pc.salary;
+    const pct = b.min===b.max?50:Math.round((salary-b.min)/(b.max-b.min)*100);
+    pc.sliderPct = pct;
+    const sl = document.getElementById('pay-slider');
+    if (sl) sl.value = pct;
+  }
+}
+
+function applySlider() {
+  if (pc.selectedBand === null) return;
+  const b = SALARY_BANDS[pc.selectedBand];
+  const salary = b.min + (b.max - b.min) * (pc.sliderPct / 100);
+  pc.salary = Math.round(salary * 1000000);
+  const el = document.getElementById('pay-salary');
+  if (el) el.value = pc.salary;
+  const el2 = document.getElementById('pay-point');
+  if (el2) el2.value = 'custom';
+  pc.salaryPoint = 'custom';
+}
+
+function updateSliderLabels() {
+  if (pc.selectedBand === null) return;
+  const b = SALARY_BANDS[pc.selectedBand];
+  const mn=document.getElementById('sl-min'),md=document.getElementById('sl-mid'),mx=document.getElementById('sl-max');
+  if (mn) mn.textContent=`${b.min}M`;
+  if (md) md.textContent=`${b.mid}M`;
+  if (mx) mx.textContent=`${b.max}M`;
+}
+
+function addPayAllowance() {
+  pc.extraAllowances.push({name:'',amount:0});
+  renderPayAllowances();
+}
+
+function renderPayAllowances() {
+  const wrap = document.getElementById('pay-extra-allows');
+  if (!wrap) return;
+  wrap.innerHTML = pc.extraAllowances.map((a,i) => `
+    <div class="allow-row">
+      <input type="text" placeholder="Allowance name" value="${esc(a.name)}"
+        oninput="pc.extraAllowances[${i}].name=this.value;calcPay()">
+      <input type="number" placeholder="IDR / month" value="${a.amount||''}" min="0" step="10000"
+        oninput="pc.extraAllowances[${i}].amount=+this.value;calcPay()">
+      <button class="allow-del" onclick="pc.extraAllowances.splice(${i},1);renderPayAllowances();calcPay()">×</button>
+    </div>`).join('');
+}
+
+function calcPayRestDay(hourlyRate, paidHrs, workWeekDays) {
+  const bp1=workWeekDays===5?8:7, bp2=workWeekDays===5?9:8;
+  let pay=0;
+  for (let h=1;h<=Math.floor(paidHrs);h++) pay+=h<=bp1?2.0*hourlyRate:h===bp2?3.0*hourlyRate:4.0*hourlyRate;
+  const frac=paidHrs%1;
+  if (frac>0){const nh=Math.floor(paidHrs)+1;pay+=frac*(nh<=bp1?2.0:nh===bp2?3.0:4.0)*hourlyRate;}
+  return pay;
+}
+
+function calcPPh21Pay(grossAnnual, ptkpKey) {
+  const ptkp=PTKP_VALUES[ptkpKey]||54000000;
+  const empBpjs=grossAnnual*0.04;
+  const taxable=Math.max(0,grossAnnual-ptkp-empBpjs);
+  const brackets=[{limit:60000000,rate:0.05},{limit:190000000,rate:0.15},{limit:250000000,rate:0.25},{limit:4500000000,rate:0.30},{limit:Infinity,rate:0.35}];
+  let tax=0,prev=0,rem=taxable;
+  for(const b of brackets){if(rem<=0)break;const s=Math.min(rem,b.limit-prev);tax+=s*b.rate;rem-=s;prev=b.limit;}
+  return Math.round(tax);
+}
+
+function calcPay() {
+  const salary=pc.salary||0;
+  const hourlyRate=salary/173;
+  const paidHrsPerShift=Math.max(0,pc.shiftGrossHrs-pc.unpaidBreakMin/60);
+  const stdHrs=pc.workWeekDays===5?8:7;
+  const dpm=pc.daysPerMonth||0;
+  const nightPm=Math.min(pc.nightShiftsMonth||0,dpm);
+  const restDayPm=Math.min(pc.restDayShiftsMonth||0,dpm);
+  const phPm=Math.min(pc.phShiftsMonth||0,dpm);
+  const normalDays=Math.max(0,dpm-restDayPm-phPm);
+  const basePay=salary;
+  let otEarnings=0,otH1=0,otH2hrs=0,restDayExtra=0,phExtra=0;
+  if(!pc.otBuiltIn){
+    const otShifts=Math.min(pc.otShiftsMonth||0,normalDays);
+    const otHrs=Math.min(pc.otHrsPerShift||0,4);
+    otH1=Math.min(otHrs,1)*otShifts; otH2hrs=Math.max(0,otHrs-1)*otShifts;
+    otEarnings=(otH1*1.5+otH2hrs*2.0)*hourlyRate;
+    const rdBasePay=stdHrs*hourlyRate*restDayPm;
+    restDayExtra=Math.max(0,calcPayRestDay(hourlyRate,paidHrsPerShift,pc.workWeekDays)*restDayPm-rdBasePay);
+    const phBasePay=stdHrs*hourlyRate*phPm;
+    phExtra=Math.max(0,calcPayRestDay(hourlyRate,paidHrsPerShift,pc.workWeekDays)*phPm-phBasePay);
+  }
+  const nightAllowance=nightPm*paidHrsPerShift*hourlyRate*(pc.nightMult-1);
+  const mealTotal=(pc.mealAllow||0)*dpm;
+  const transTotal=(pc.transAllow||0)*dpm;
+  const extraTotal=pc.extraAllowances.reduce((s,a)=>s+(a.amount||0),0);
+  const grossMonthly=basePay+otEarnings+restDayExtra+phExtra+nightAllowance+mealTotal+transTotal+extraTotal;
+  const grossAnnual=grossMonthly*12;
+  const empBpjsMonthly=Math.round(salary*0.04);
+  const pph21Annual=calcPPh21Pay(grossAnnual,pc.ptkp);
+  const pph21Monthly=Math.round(pph21Annual/12);
+  const netMonthly=Math.round(grossMonthly-empBpjsMonthly-pph21Monthly);
+  const empBpjsEmployer=Math.round(salary*0.1024);
+  const thrMonthly=Math.round(salary/12);
+  const totalEmployerMonthly=Math.round(grossMonthly+empBpjsEmployer+thrMonthly);
+  renderPayslip({salary,hourlyRate,paidHrsPerShift,stdHrs,basePay,otEarnings,otH1,otH2hrs,restDayExtra,phExtra,nightAllowance,mealTotal,transTotal,extraTotal,grossMonthly,grossAnnual,empBpjsMonthly,pph21Monthly,pph21Annual,netMonthly,empBpjsEmployer,thrMonthly,totalEmployerMonthly,dpm,nightPm,restDayPm,phPm});
+}
+
+function renderPayslip(r) {
+  const cur='IDR';
+  const bandLabel=pc.selectedBand!==null?`Band ${SALARY_BANDS[pc.selectedBand].band}`:'Custom Salary';
+  const ptkpLabels={TK0:'TK/0',K0:'K/0',K1:'K/1',K2:'K/2',K3:'K/3'};
+  document.getElementById('ps-name').textContent=pc.name||'Employee Pay Packet';
+  document.getElementById('ps-meta').textContent=`${bandLabel} · ${fmtC(pc.salary,cur)}/month · ${ptkpLabels[pc.ptkp]} · ${pc.empType} · ${new Date().toLocaleDateString('en-AU',{month:'long',year:'numeric'})}`;
+  const psRow=(label,value,color='var(--text)')=>`<div class="payslip-row"><span class="payslip-label">${label}</span><span class="payslip-value" style="color:${color}">${value}</span></div>`;
+  let html='';
+  html+=`<div class="payslip-section">
+    <div class="payslip-section-title">Earnings</div>
+    ${psRow('Base salary (monthly)',fmtC(r.basePay,cur))}
+    ${!pc.otBuiltIn&&r.otEarnings?psRow(`Weekday OT (${r.otH1.toFixed(1)} hrs @1.5× + ${r.otH2hrs.toFixed(1)} hrs @2×)`,fmtC(r.otEarnings,cur),'var(--amber)'):''}
+    ${pc.otBuiltIn?psRow('Overtime','Included in base salary ✓','var(--muted)'):''}
+    ${r.restDayExtra?psRow(`Rest day extra (${r.restDayPm} shifts, 2×–4× rates)`,fmtC(r.restDayExtra,cur),'var(--amber)'):''}
+    ${r.phExtra?psRow(`Public holiday extra (${r.phPm} shifts, 2×–4× rates)`,fmtC(r.phExtra,cur),'var(--amber)'):''}
+    ${r.nightAllowance?psRow(`Night shift allowance (${r.nightPm} shifts × ${pc.nightMult}×)`,fmtC(r.nightAllowance,cur),'var(--night-text)'):''}
+    ${r.mealTotal?psRow(`Meal allowance (${r.dpm} shifts × ${fmtC(pc.mealAllow,cur)})`,fmtC(r.mealTotal,cur),'var(--muted)'):''}
+    ${r.transTotal?psRow(`Transport allowance (${r.dpm} shifts × ${fmtC(pc.transAllow,cur)})`,fmtC(r.transTotal,cur),'var(--muted)'):''}
+    ${pc.extraAllowances.filter(a=>a.amount).map(a=>psRow(a.name||'Allowance',fmtC(a.amount,cur),'var(--muted)')).join('')}
+    <div class="payslip-total-row">
+      <span class="payslip-total-label">Gross Monthly</span>
+      <span class="payslip-total-value">${fmtC(r.grossMonthly,cur)}</span>
+    </div>
+  </div>`;
+  html+=`<div class="payslip-section">
+    <div class="payslip-section-title">Deductions (Employee)</div>
+    ${psRow('BPJS Kesehatan + Ketenagakerjaan (4% of base)',`− ${fmtC(r.empBpjsMonthly,cur)}`,'var(--red)')}
+    ${psRow(`PPh 21 income tax (${ptkpLabels[pc.ptkp]} — monthly provision)`,`− ${fmtC(r.pph21Monthly,cur)}`,'var(--red)')}
+    <div class="payslip-total-row">
+      <span class="payslip-total-label">Total Deductions</span>
+      <span class="payslip-total-value" style="color:var(--red)">− ${fmtC(r.empBpjsMonthly+r.pph21Monthly,cur)}</span>
+    </div>
+  </div>`;
+  html+=`<div class="payslip-net-box">
+    <div class="payslip-net-item"><div class="pn-label">Net Take-Home / Month</div><div class="pn-value">${fmtC(r.netMonthly,cur)}</div></div>
+    <div class="payslip-net-item"><div class="pn-label">Net Take-Home / Year</div><div class="pn-value">${fmtC(r.netMonthly*12,cur)}</div></div>
+  </div>`;
+  html+=`<div class="payslip-employer-box" style="margin-top:12px">
+    <div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#7eb8f7;font-family:var(--font-sans);margin-bottom:8px">Employer Total Cost / Month</div>
+    ${psRow('Gross salary + shift payments',fmtC(r.grossMonthly,cur),'var(--text)')}
+    ${psRow('Employer BPJS (~10.24% of base)',fmtC(r.empBpjsEmployer,cur),'var(--text)')}
+    ${psRow('THR accrual (1/12 per month)',fmtC(r.thrMonthly,cur),'var(--text)')}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;padding-top:6px;border-top:1px solid #1a3a5c">
+      <span style="font-size:11px;color:#7eb8f7;font-family:var(--font-sans);text-transform:uppercase">Total Employer Cost / Month</span>
+      <span style="font-size:15px;font-weight:700;color:#58a6ff">${fmtC(r.totalEmployerMonthly,cur)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+      <span style="font-size:11px;color:#7eb8f7;font-family:var(--font-sans);text-transform:uppercase">Total Employer Cost / Year</span>
+      <span style="font-size:15px;font-weight:700;color:#58a6ff">${fmtC(r.totalEmployerMonthly*12,cur)}</span>
+    </div>
+  </div>`;
+  html+=`<div class="ptkp-note">PPh 21 is a monthly provision — actual annual tax may vary. PTKP: ${(PTKP_VALUES[pc.ptkp]||0).toLocaleString()} IDR/yr. Effective annual tax rate: ${r.grossAnnual>0?((r.pph21Annual/r.grossAnnual)*100).toFixed(1):0}%.</div>`;
+  document.getElementById('ps-body').innerHTML=html;
+  const otInputs=document.getElementById('pay-ot-inputs');
+  if(otInputs)otInputs.style.display=pc.otBuiltIn?'none':'block';
+}
+
+function exportPayslipJSON() {
+  const data={_type:'payslip',_date:new Date().toISOString(),pc:JSON.parse(JSON.stringify(pc))};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;
+  a.download=`payslip-${(pc.name||'employee').replace(/[^a-z0-9]/gi,'-').toLowerCase()}.json`;
+  a.click();URL.revokeObjectURL(url);
+}
+
+// ════════════════════════════════════════════════════════════
+// PASSWORD AUTHENTICATION
+// ════════════════════════════════════════════════════════════
+// Note: client-side password — adequate for internal access control,
+// not cryptographic security. Stored as hash to avoid plain-text in source.
+const AUTH_HASH = 'fc792c4cfc792c4cfc792c4cfc792c4c'; // Toka2026!
+
+function hashString(str) {
+  // Simple deterministic hash — not cryptographic but obscures plain text
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = (hash * 0x01000193) >>> 0;
+  }
+  // Second pass for better distribution
+  let h2 = 0;
+  const h = hash.toString(16).padStart(8,'0');
+  for (let i = 0; i < h.length; i++) {
+    h2 = ((h2 << 5) - h2) + h.charCodeAt(i);
+    h2 |= 0;
+  }
+  return h.repeat(4).slice(0,32);
+}
+
+function checkPassword(pw) {
+  return hashString(pw) === AUTH_HASH;
+}
+
+let gradesSectionUnlocked = false;
+let paySectionUnlocked = false;
+
+function requireAuth(tab) {
+  if (paySectionUnlocked) {
+    switchTab(tab);
+  } else {
+    // Switch to pay pane to show the lock gate
+    state.tab = 'pay';
+    document.querySelectorAll('.pane').forEach(p => p.classList.toggle('active', p.id === 'pane-pay'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-pay')?.classList.add('active');
+    document.getElementById('pay-lock-gate').style.display = 'block';
+    document.getElementById('pay-content').style.display = 'none';
+    setTimeout(() => document.getElementById('pay-pw-input')?.focus(), 100);
+  }
+}
+
+function checkPayAuth() {
+  const pw = document.getElementById('pay-pw-input')?.value || '';
+  if (checkPassword(pw)) {
+    paySectionUnlocked = true;
+    document.getElementById('pay-lock-gate').style.display = 'none';
+    document.getElementById('pay-content').style.display = 'block';
+    document.getElementById('tab-pay').classList.remove('locked-tab');
+    document.getElementById('pay-pw-input').value = '';
+    document.getElementById('pay-pw-err').textContent = '';
+    renderBandPicker(); renderPayAllowances(); calcPay();
+  } else {
+    const err = document.getElementById('pay-pw-err');
+    err.textContent = 'Incorrect password';
+    document.getElementById('pay-pw-input').value = '';
+    setTimeout(() => { err.textContent = ''; }, 2500);
+  }
+}
+
+function lockPaySection() {
+  paySectionUnlocked = false;
+  document.getElementById('pay-lock-gate').style.display = 'block';
+  document.getElementById('pay-content').style.display = 'none';
+  document.getElementById('tab-pay').classList.add('locked-tab');
+  switchTab('config');
+}
+
+function gradesHeaderClick() {
+  if (!gradesSectionUnlocked) {
+    // Open the collapsible to show lock gate inside
+    const body = document.getElementById('body-grades');
+    const arrow = document.getElementById('arr-grades');
+    body.classList.add('open');
+    arrow.classList.add('open');
+    setTimeout(() => document.getElementById('grades-pw-input')?.focus(), 100);
+  } else {
+    toggleSection('grades');
+  }
+}
+
+function checkGradesAuth() {
+  const pw = document.getElementById('grades-pw-input')?.value || '';
+  if (checkPassword(pw)) {
+    gradesSectionUnlocked = true;
+    document.getElementById('grades-lock-gate').style.display = 'none';
+    document.getElementById('grades-content').style.display = 'block';
+    document.getElementById('grades-lock-badge').style.display = 'none';
+    document.getElementById('grades-pw-input').value = '';
+    document.getElementById('grades-pw-err').textContent = '';
+    renderGradeSetup();
+    renderSalaryBands();
+  } else {
+    const err = document.getElementById('grades-pw-err');
+    err.textContent = 'Incorrect password';
+    document.getElementById('grades-pw-input').value = '';
+    setTimeout(() => { err.textContent = ''; }, 2500);
+  }
+}
+
+function lockGradesSection() {
+  gradesSectionUnlocked = false;
+  document.getElementById('grades-lock-gate').style.display = 'block';
+  document.getElementById('grades-content').style.display = 'none';
+  document.getElementById('grades-lock-badge').style.display = '';
+  document.getElementById('body-grades').classList.remove('open');
+  document.getElementById('arr-grades').classList.remove('open');
+}
+
+// ════════════════════════════════════════════════════════════
+// PERSISTENCE — localStorage + export/import + schema versioning
+// ════════════════════════════════════════════════════════════
+const LS_KEY = 'rosterAnalyser_autosave';
+const LS_SLOTS_KEY = 'rosterAnalyser_slots';
+const MAX_SLOTS = 5;
+
+function serializeState() {
+  return {
+    _version: SCHEMA_VERSION,
+    _saved: new Date().toISOString(),
+    wage: JSON.parse(JSON.stringify(state.wage)),
+    grades: JSON.parse(JSON.stringify(state.grades)),
+    rosters: state.rosters.map(r => JSON.parse(JSON.stringify(r))),
+  };
+}
+
+function migrateState(data) {
+  // v1 — initial schema, no migration needed
+  // Future: add cases here when new fields are added
+  // e.g. if (data._version < 2) { data.wage.newField = defaultValue; }
+  data._version = SCHEMA_VERSION;
+  return data;
+}
+
+function applySerializedState(data) {
+  if (!data || typeof data !== 'object') return false;
+  try {
+    const migrated = migrateState(data);
+    if (migrated.wage) Object.assign(state.wage, migrated.wage);
+    if (Array.isArray(migrated.grades)) {
+      state.grades = migrated.grades;
+      // Restore nextGradeId to avoid ID collisions
+      const maxId = state.grades.reduce((m,g) => Math.max(m, g.id||0), 0);
+      nextGradeId = maxId + 1;
+    }
+    if (Array.isArray(migrated.rosters)) {
+      state.rosters = migrated.rosters.map(r => makeRoster(r));
+    }
+    return true;
+  } catch(e) { return false; }
+}
+
+// Auto-save on every change — debounced via renderAll
+function autoSave() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(serializeState()));
+  } catch(e) { /* storage full or unavailable */ }
+}
+
+function autoLoad() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    return applySerializedState(data);
+  } catch(e) { return false; }
+}
+
+// ─── Named scenario slots ───
+function loadSlots() {
+  try { return JSON.parse(localStorage.getItem(LS_SLOTS_KEY)) || []; }
+  catch(e) { return []; }
+}
+function saveSlots(slots) {
+  try { localStorage.setItem(LS_SLOTS_KEY, JSON.stringify(slots)); } catch(e) {}
+}
+
+let _pendingSlotIdx = null;
+
+function renderSlotBtns() {
+  const slots = loadSlots();
+  const wrap = document.getElementById('slot-btns');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  for (let i = 0; i < MAX_SLOTS; i++) {
+    const slot = slots[i];
+    const btn = document.createElement('div');
+    btn.className = `scenario-slot${slot ? ' has-data' : ''}`;
+    btn.title = slot ? `Load: ${slot.name}\nSaved: ${new Date(slot._saved).toLocaleString()}` : `Empty slot ${i+1}`;
+    btn.innerHTML = slot
+      ? `${esc(slot.name.slice(0,16))}${slot.name.length>16?'…':''} <button class="slot-del" title="Delete" onclick="event.stopPropagation();deleteSlot(${i})">×</button>`
+      : `Slot ${i+1}`;
+    if (slot) btn.onclick = () => loadSlot(i);
+    wrap.appendChild(btn);
+  }
+}
+
+function saveToSlot() {
+  const slots = loadSlots();
+  const emptyIdx = slots.findIndex(s => !s);
+  const targetIdx = emptyIdx >= 0 ? emptyIdx : (slots.length < MAX_SLOTS ? slots.length : null);
+  // If all slots full, ask which to overwrite — for simplicity just use first slot
+  _pendingSlotIdx = targetIdx !== null ? targetIdx : 0;
+  const modal = document.getElementById('name-modal');
+  const input = document.getElementById('modal-name');
+  input.value = state.rosters.find(r=>r.enabled)?.name || '';
+  modal.classList.add('open');
+  setTimeout(() => input.focus(), 50);
+}
+
+function confirmSave() {
+  const name = document.getElementById('modal-name').value.trim() || `Scenario ${_pendingSlotIdx+1}`;
+  closeModal();
+  const slots = loadSlots();
+  while (slots.length <= _pendingSlotIdx) slots.push(null);
+  slots[_pendingSlotIdx] = { ...serializeState(), name };
+  saveSlots(slots);
+  renderSlotBtns();
+  showStatus(`Saved to slot ${_pendingSlotIdx+1}`);
+}
+
+function loadSlot(i) {
+  const slots = loadSlots();
+  const slot = slots[i];
+  if (!slot) return;
+  if (applySerializedState(slot)) {
+    renderAll();
+    showStatus(`Loaded: ${slot.name}`);
+  }
+}
+
+function deleteSlot(i) {
+  const slots = loadSlots();
+  slots[i] = null;
+  saveSlots(slots);
+  renderSlotBtns();
+  showStatus('Slot cleared');
+}
+
+function closeModal() {
+  document.getElementById('name-modal').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if (e.key==='Escape') closeModal(); });
+document.addEventListener('DOMContentLoaded', () => {
+  const nm = document.getElementById('name-modal');
+  if (nm) nm.addEventListener('click', e => { if (e.target===e.currentTarget) closeModal(); });
+  const mn = document.getElementById('modal-name');
+  if (mn) mn.addEventListener('keydown', e => { if (e.key==='Enter') confirmSave(); });
+});
+
+// ─── Export / Import JSON ───
+function exportJSON() {
+  const data = serializeState();
+  const name = state.rosters.find(r=>r.enabled)?.name || 'roster-scenario';
+  const filename = `${name.replace(/[^a-z0-9]/gi,'-').toLowerCase()}-${new Date().toISOString().slice(0,10)}.json`;
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+  showStatus('Exported');
+}
+
+function importJSON(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (applySerializedState(data)) {
+        renderAll();
+        showStatus(`Imported: ${file.name}`);
+      } else {
+        showStatus('Import failed — invalid file', true);
+      }
+    } catch(err) {
+      showStatus('Import failed — invalid JSON', true);
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function showStatus(msg, isError=false) {
+  const el = document.getElementById('save-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = isError ? 'var(--red)' : 'var(--green)';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.textContent = ''; }, 3000);
+}
+
+// ════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════
+const _savedOk = autoLoad();
+renderAll();
+renderBenchmarks();
+renderSalaryBands();
+initAIPanel();
+renderSlotBtns();
+if (_savedOk) showStatus('Session restored');
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+</body>
+</html>
