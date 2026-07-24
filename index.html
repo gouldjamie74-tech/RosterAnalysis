@@ -508,9 +508,19 @@ input[type=range]{width:100%;accent-color:var(--gold)}
         <div>
           <label class="toggle-row">
             <input type="checkbox" id="w-bpjs" checked onchange="updateWage('includeBPJS',this.checked)">
-            BPJS Employer (~10.24%)
+            <span id="w-bpjs-lbl">BPJS Employer (~11.27%)</span>
           </label>
           <div class="sublbl" style="margin-top:3px">JKK+JHT+JP+JKM+Kesehatan</div>
+        </div>
+        <div>
+          <div class="lbl">JKK Work-Accident Risk (PP 44/2015)</div>
+          <select id="w-jkk" onchange="updateWage('jkkRate',+this.value);document.getElementById('w-bpjs-lbl').textContent='BPJS Employer (~'+(10.0+ +this.value*100).toFixed(2)+'%)'">
+            <option value="0.0024">Very low (Kel. I) — 0.24%</option>
+            <option value="0.0054">Low (Kel. II) — 0.54%</option>
+            <option value="0.0089">Medium (Kel. III) — 0.89%</option>
+            <option value="0.0127" selected>High (Kel. IV) — 1.27% · open-pit mining</option>
+            <option value="0.0174">Very high (Kel. V) — 1.74% · underground/high-risk</option>
+          </select>
         </div>
         <div>
           <label class="toggle-row">
@@ -880,15 +890,16 @@ input[type=range]{width:100%;accent-color:var(--gold)}
     </div>
     <div class="law-card"><h3>BPJS Employer Contributions</h3>
       <div class="law-item">Kesehatan: <span class="law-val">4.0%</span></div>
-      <div class="law-item">JKK (medium risk mining): <span class="law-val">0.24%</span></div>
+      <div class="law-item">JKK (mining, Kel. IV): <span class="law-val">1.27%</span></div>
       <div class="law-item">JHT (old age): <span class="law-val">3.7%</span></div>
       <div class="law-item">JP (pension): <span class="law-val">2.0%</span></div>
       <div class="law-item">JKM (death): <span class="law-val">0.3%</span></div>
-      <div class="law-item">Total employer: <span class="law-val">~10.24%</span></div>
+      <div class="law-item">Total employer: <span class="law-val">~11.27%</span></div>
+      <div class="law-item">JKK varies 0.24–1.74% by risk group</div>
     </div>
     <div class="law-card"><h3>Leave &amp; Entitlements</h3>
       <div class="law-item">Annual leave: <span class="law-val">12 days (after 1 yr)</span></div>
-      <div class="law-item">Long service: <span class="law-val">2 months (at 6 yrs)</span></div>
+      <div class="law-item">Long service: <span class="law-val">Per PKB/co. policy</span></div>
       <div class="law-item">THR: <span class="law-val">1× monthly (after 1 yr)</span></div>
       <div class="law-item">Sick leave: <span class="law-val">Paid (sliding scale)</span></div>
     </div>
@@ -940,7 +951,7 @@ const state = {
   wage:{
     currency:'IDR', monthlySalary:8000000, workWeekDays:5,
     nightAllowMult:1.2, mealAllowance:50000, transportAllowance:30000,
-    phPerYear:16, includeBPJS:true, includeTHR:true,
+    phPerYear:16, includeBPJS:true, includeTHR:true, jkkRate:0.0127,
     absenteeismPct:5, escalationPct:8,
   },
   grades: [],  // [{id, name, salary}] — shared across all rosters
@@ -1157,7 +1168,7 @@ function analyzeRoster(roster, wage) {
   const phExtra = phWorkDays * (restDayEq - wkdayEq) * hourlyRate;
 
   const shiftSubtotal = basePay + otPay + nightAllow + otherAllow + phExtra;
-  const bpjsPct = 0.04+0.0024+0.037+0.02+0.003;
+  const bpjsPct = 0.04 + (wage.jkkRate ?? 0.0127) + 0.037 + 0.02 + 0.003;
   const bpjsAnnual = wage.includeBPJS ? wage.monthlySalary*12*bpjsPct : 0;
   const thrAnnual  = wage.includeTHR  ? wage.monthlySalary : 0;
   const absentCost = shiftSubtotal * (wage.absenteeismPct/100);
@@ -1264,7 +1275,7 @@ function calcGradeBreakdown(roster, wage, totalPaidHoursYear, daysOnYear, nights
 
   const isWorking = c => c !== 'O';
   const isNight   = c => c === 'N';
-  const bpjsPct   = 0.04+0.0024+0.037+0.02+0.003;
+  const bpjsPct   = 0.04 + (wage.jkkRate ?? 0.0127) + 0.037 + 0.02 + 0.003;
 
   const rows = grades.map(g => {
     const count = (roster.gradeHeadcount && roster.gradeHeadcount[g.id]) || 0;
@@ -1326,11 +1337,12 @@ function calcTakeHome(grossAnnual, monthlySalary) {
   const taxableIncome = Math.max(0, grossAnnual - PTKP - empBpjsAnnual);
 
   let pph21 = 0;
+  // UU HPP (UU 7/2021) progressive bands — cumulative upper bounds
   const brackets = [
     { limit: 60000000,   rate: 0.05 },
-    { limit: 190000000,  rate: 0.15 },
-    { limit: 250000000,  rate: 0.25 },
-    { limit: 4500000000, rate: 0.30 },
+    { limit: 250000000,  rate: 0.15 },
+    { limit: 500000000,  rate: 0.25 },
+    { limit: 5000000000, rate: 0.30 },
     { limit: Infinity,   rate: 0.35 },
   ];
   let remaining = taxableIncome;
@@ -1822,7 +1834,7 @@ function renderResults(){
       ${cRow('PH extra (rest day rates)',result.phExtra,pct(result.phExtra),'#fb923c',w.currency)}
       ${cRow('Night shift allowances',result.nightAllow,pct(result.nightAllow),'var(--night-text)',w.currency)}
       ${cRow('Meal + transport allow.',result.otherAllow,pct(result.otherAllow),'var(--muted)',w.currency)}
-      ${result.bpjsAnnual?cRow('BPJS employer (10.24%)',result.bpjsAnnual,pct(result.bpjsAnnual),'var(--blue)',w.currency):''}
+      ${result.bpjsAnnual?cRow(`BPJS employer (${(10.0+(w.jkkRate??0.0127)*100).toFixed(2)}%)`,result.bpjsAnnual,pct(result.bpjsAnnual),'var(--blue)',w.currency):''}
       ${result.thrAnnual?cRow('THR (1× monthly salary)',result.thrAnnual,pct(result.thrAnnual),'var(--green)',w.currency):''}
       ${cRow('Absenteeism cover cost',result.absentCost,pct(result.absentCost),'var(--red)',w.currency)}
       <div class="cost-total"><div class="ctlbl">Total / person / year (employer cost)</div><div class="ctval" style="color:${col}">${fmtC(tot,w.currency)}</div></div>
@@ -2641,7 +2653,7 @@ function calcPPh21Pay(grossAnnual, ptkpKey) {
   const ptkp=PTKP_VALUES[ptkpKey]||54000000;
   const empBpjs=grossAnnual*0.04;
   const taxable=Math.max(0,grossAnnual-ptkp-empBpjs);
-  const brackets=[{limit:60000000,rate:0.05},{limit:190000000,rate:0.15},{limit:250000000,rate:0.25},{limit:4500000000,rate:0.30},{limit:Infinity,rate:0.35}];
+  const brackets=[{limit:60000000,rate:0.05},{limit:250000000,rate:0.15},{limit:500000000,rate:0.25},{limit:5000000000,rate:0.30},{limit:Infinity,rate:0.35}];
   let tax=0,prev=0,rem=taxable;
   for(const b of brackets){if(rem<=0)break;const s=Math.min(rem,b.limit-prev);tax+=s*b.rate;rem-=s;prev=b.limit;}
   return Math.round(tax);
@@ -2679,7 +2691,7 @@ function calcPay() {
   const pph21Annual=calcPPh21Pay(grossAnnual,pc.ptkp);
   const pph21Monthly=Math.round(pph21Annual/12);
   const netMonthly=Math.round(grossMonthly-empBpjsMonthly-pph21Monthly);
-  const empBpjsEmployer=Math.round(salary*0.1024);
+  const empBpjsEmployer=Math.round(salary*0.1127); // mining JKK Kel. IV (1.27%)
   const thrMonthly=Math.round(salary/12);
   const totalEmployerMonthly=Math.round(grossMonthly+empBpjsEmployer+thrMonthly);
   renderPayslip({salary,hourlyRate,paidHrsPerShift,stdHrs,basePay,otEarnings,otH1,otH2hrs,restDayExtra,phExtra,nightAllowance,mealTotal,transTotal,extraTotal,grossMonthly,grossAnnual,empBpjsMonthly,pph21Monthly,pph21Annual,netMonthly,empBpjsEmployer,thrMonthly,totalEmployerMonthly,dpm,nightPm,restDayPm,phPm});
@@ -2725,7 +2737,7 @@ function renderPayslip(r) {
   html+=`<div class="payslip-employer-box" style="margin-top:12px">
     <div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#7eb8f7;font-family:var(--font-sans);margin-bottom:8px">Employer Total Cost / Month</div>
     ${psRow('Gross salary + shift payments',fmtC(r.grossMonthly,cur),'var(--text)')}
-    ${psRow('Employer BPJS (~10.24% of base)',fmtC(r.empBpjsEmployer,cur),'var(--text)')}
+    ${psRow('Employer BPJS (~11.27% of base)',fmtC(r.empBpjsEmployer,cur),'var(--text)')}
     ${psRow('THR accrual (1/12 per month)',fmtC(r.thrMonthly,cur),'var(--text)')}
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;padding-top:6px;border-top:1px solid #1a3a5c">
       <span style="font-size:11px;color:#7eb8f7;font-family:var(--font-sans);text-transform:uppercase">Total Employer Cost / Month</span>
