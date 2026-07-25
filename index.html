@@ -174,6 +174,9 @@ input[type=checkbox]{width:auto;accent-color:var(--gold);cursor:pointer}
 .hmap-cells{display:flex;gap:2px}
 .hmap-cell{width:18px;height:22px;border-radius:2px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;cursor:default}
 .hmap-day{width:18px;height:14px;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--dim);flex-shrink:0}
+.hmap-tot{width:18px;height:15px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;flex-shrink:0;font-family:var(--font-mono)}
+.hmap-tot-row .hmap-crew{font-size:9px;text-transform:uppercase;letter-spacing:.03em}
+.hmap-tot-sep{height:0;border-top:1px dashed var(--border2);margin:6px 0 3px}
 .hmap-legend{display:flex;gap:12px;margin-top:8px;font-size:10px;color:var(--muted);font-family:var(--font-sans)}
 .hmap-leg-dot{width:12px;height:12px;border-radius:2px;display:inline-block;margin-right:4px}
 /* Canvas wrappers */
@@ -2078,6 +2081,10 @@ function renderCharts(actives) {
     while (showCycles > 2 && n * showCycles > 120) showCycles--; // cap DOM for very short cycles
     const showDays = n * showCycles;
     const cycStart = d => d > 0 && d % n === 0;                  // first day of a repeat
+    // Crew c's shift on day d. Round the day offset FIRST, then wrap into
+    // [0,n) — so non-integer offsets (crews that don't divide the cycle
+    // evenly) can never index past the pattern (which showed "undefined").
+    const cellIdx = (d, c) => ((Math.round(d - c * offset) % n) + n) % n;
 
     // Day number header (continuous 1…N; gold divider marks each new cycle)
     let html = `<div class="hmap-row"><div class="hmap-crew"></div><div class="hmap-cells">`;
@@ -2090,23 +2097,43 @@ function renderCharts(actives) {
     for (let c = 0; c < crews; c++) {
       html += `<div class="hmap-row"><div class="hmap-crew">Crew ${String.fromCharCode(65+c)}</div><div class="hmap-cells">`;
       for (let d = 0; d < showDays; d++) {
-        const idx = Math.round(((d - c * offset) % n + n) % n);
-        const sh = pattern[idx];
+        const sh = pattern[cellIdx(d, c)];
         const isDay = sh==='D'||sh==='S';
         const isNight = sh==='N';
         const bg = isDay?'#fef3c7':isNight?'#ede9fe':'#f3f4f6';
         const col = isDay?'#92400e':isNight?'#5b21b6':'#4b5563';
         const bd = isDay?'1px solid #fcd34d':isNight?'1px solid #c4b5fd':'1px solid #d1d5db';
         const div = cycStart(d) ? 'border-left:2px solid var(--gold);' : '';
-        html += `<div class="hmap-cell" style="background:${bg};color:${col};border:${bd};${div}" title="Crew ${String.fromCharCode(65+c)}, Cycle ${Math.floor(d/n)+1} Day ${idx+1}: ${SHIFT_LABELS[sh]||sh}">${sh}</div>`;
+        html += `<div class="hmap-cell" style="background:${bg};color:${col};border:${bd};${div}" title="Crew ${String.fromCharCode(65+c)}, Cycle ${Math.floor(d/n)+1} Day ${cellIdx(d,c)+1}: ${SHIFT_LABELS[sh]||sh}">${sh||'·'}</div>`;
       }
       html += `</div></div>`;
     }
+
+    // ─── Daily manning totals: people on each shift per day ───
+    // people = (crews on that shift that day) × employees per crew
+    const epc = r.empPerCrew || 0;
+    const mannRow = (label, txtCol, match) => {
+      let row = `<div class="hmap-row hmap-tot-row"><div class="hmap-crew" style="color:${txtCol}">${label}</div><div class="hmap-cells">`;
+      for (let d = 0; d < showDays; d++) {
+        let crewsOn = 0;
+        for (let c = 0; c < crews; c++) if (match(pattern[cellIdx(d, c)])) crewsOn++;
+        const ppl = crewsOn * epc;
+        const div = cycStart(d) ? 'border-left:2px solid var(--gold);' : '';
+        row += `<div class="hmap-tot" style="color:${txtCol};${div}" title="${label} — Day ${d%n+1}: ${crewsOn} crew${crewsOn!==1?'s':''} × ${epc} = ${ppl}">${ppl}</div>`;
+      }
+      return row + `</div></div>`;
+    };
+    html += `<div class="hmap-tot-sep"></div>`;
+    html += mannRow('On Day',   '#92400e', sh => sh==='D'||sh==='S');
+    html += mannRow('On Night', '#5b21b6', sh => sh==='N');
+    html += mannRow('Off',      'var(--muted)', sh => sh==='O');
+
     html += `<div class="hmap-legend">
       <span><span class="hmap-leg-dot" style="background:#fef3c7;border:1px solid #fcd34d"></span>Day</span>
       <span><span class="hmap-leg-dot" style="background:#ede9fe;border:1px solid #c4b5fd"></span>Night</span>
       <span><span class="hmap-leg-dot" style="background:#f3f4f6;border:1px solid #d1d5db"></span>Off</span>
       <span style="margin-left:8px;color:var(--dim)">Showing ${showCycles} cycles · offset ${offset.toFixed(1)} days between crews · scroll → for more</span>
+      <span style="color:var(--dim)">Totals = people on shift/day (crews on shift × ${epc}/crew)</span>
     </div>`;
     el.innerHTML = html;
   });
