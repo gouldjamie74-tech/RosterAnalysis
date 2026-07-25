@@ -1409,7 +1409,7 @@ function renderGradeSetup() {
     <tbody>
     ${grades.map((g,gi) => `<tr>
       <td><input type="text" value="${esc(g.name)}" placeholder="e.g. Operator Gr.1"
-        oninput="updateGrade(${gi},'name',this.value)"></td>
+        oninput="state.grades[${gi}].name=this.value" onchange="renderAll()"></td>
       <td><input type="number" value="${g.salary}" min="0" step="100000"
         onchange="updateGrade(${gi},'salary',+this.value)"
         oninput="updateGrade(${gi},'salary',+this.value)"></td>
@@ -1657,8 +1657,8 @@ function buildCard(r,idx){
   return `<div class="roster-card ${arcC}">
     <div class="rc-hdr">
       <div class="rc-dot ${dotC}"></div>
-      <input class="rc-name" placeholder="Roster ${idx+1} name…" value="${esc(r.name)}"
-        oninput="updateRoster(${idx},'name',this.value)">
+      <input class="rc-name" placeholder="Name this scenario…" value="${esc(r.name)}"
+        oninput="state.rosters[${idx}].name=this.value" onchange="renderAll()">
       <label class="toggle-row">
         <input type="checkbox" ${r.enabled?'checked':''} onchange="updateRoster(${idx},'enabled',this.checked)">
         Active
