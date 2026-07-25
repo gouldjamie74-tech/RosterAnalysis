@@ -233,18 +233,6 @@ tr:last-child td{border-bottom:none}
 .fat-LOW{background:#dcfce7;border:1px solid #86efac}
 .fat-badge{font-size:16px;font-weight:700}.fat-detail{font-size:10px;color:var(--muted);font-family:var(--font-sans)}
 
-/* ─── AI panel ─── */
-.ai-panel{background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px}
-.ai-hdr{padding:10px 15px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.ai-hdr-left{font-weight:600;color:var(--purple);font-size:12px}
-.ai-body{padding:13px 15px}
-.ai-key-row{display:flex;gap:7px;align-items:center;margin-bottom:10px}
-.ai-key-row input{flex:1;font-size:11px}
-.ai-roster-sel{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
-.ai-sel-btn{padding:4px 11px;border:1px solid var(--border2);border-radius:4px;background:transparent;color:var(--muted);cursor:pointer;font-family:var(--font-mono);font-size:11px}
-.ai-sel-btn.selected{border-color:var(--purple);color:var(--purple);background:#f5f0ff}
-.ai-output{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:11px;min-height:80px;font-size:12px;line-height:1.75;color:var(--text);font-family:var(--font-sans)}
-.ai-loading{color:var(--muted);font-style:italic}
 
 /* ─── Law / benchmarks ─── */
 .law-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:11px;margin-bottom:14px}
@@ -605,45 +593,6 @@ input[type=range]{width:100%;accent-color:var(--gold)}
 
 <!-- ═══ RESULTS PANE ═══ -->
 <div class="pane" id="pane-results">
-  <div class="ai-panel">
-    <div class="ai-hdr">
-      <div class="ai-hdr-left">🤖 AI Analysis (Claude)</div>
-      <div style="font-size:10px;color:var(--dim)" id="ai-hdr-sub">Fatigue, health, financial &amp; coverage analysis</div>
-    </div>
-    <div class="ai-body">
-      <div id="ai-key-row" style="display:none;margin-bottom:10px">
-        <div class="lbl" style="margin-bottom:4px">API Key <span style="color:var(--dim)">(local use only — not needed when hosted on Netlify)</span></div>
-        <input type="password" id="ai-key" placeholder="sk-ant-… — not stored" style="max-width:420px">
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-
-        <!-- Single roster analysis -->
-        <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:11px">
-          <div class="lbl" style="margin-bottom:6px;color:var(--purple)">Single Roster — Fatigue &amp; Health Deep Dive</div>
-          <div class="lbl" style="margin-bottom:5px">Select roster</div>
-          <div class="ai-roster-sel" id="ai-roster-btns"></div>
-          <div style="display:flex;gap:7px;margin-top:8px">
-            <button class="btn btn-gold" style="font-size:11px" onclick="runAI()">Analyse →</button>
-            <button class="btn" style="font-size:11px" onclick="document.getElementById('ai-output').innerHTML='<span class=ai-loading>Cleared.</span>'">Clear</button>
-          </div>
-          <div class="ai-output" id="ai-output" style="margin-top:10px;min-height:60px"><span class="ai-loading">Select a roster above and click Analyse for a deep-dive on fatigue risk, health impacts, efficiency, sickness absence prediction, and recommendations.</span></div>
-        </div>
-
-        <!-- Multi-roster comparison -->
-        <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:11px">
-          <div class="lbl" style="margin-bottom:6px;color:var(--gold)">All Active Rosters — Financial, Coverage &amp; Fatigue Comparison</div>
-          <div style="font-size:11px;color:var(--muted);font-family:var(--font-sans);margin-bottom:8px">Compares all enabled rosters side by side across cost, coverage risk, fatigue and health outcomes.</div>
-          <div style="display:flex;gap:7px;margin-top:8px">
-            <button class="btn" style="font-size:11px;border-color:var(--gold);color:var(--gold)" onclick="runAICompare()">Compare All Rosters →</button>
-            <button class="btn" style="font-size:11px" onclick="document.getElementById('ai-compare-output').innerHTML='<span class=ai-loading>Cleared.</span>'">Clear</button>
-          </div>
-          <div class="ai-output" id="ai-compare-output" style="margin-top:10px;min-height:60px"><span class="ai-loading">Click Compare to get an AI summary comparing all active rosters on financial cost, 24/7 coverage adequacy, fatigue risk, and long-term health outcomes — with a clear recommendation.</span></div>
-        </div>
-
-      </div>
-    </div>
-  </div>
   <div id="results-panel"><div class="empty-state">Enable and configure at least one roster to see results.</div></div>
 </div>
 
@@ -989,7 +938,6 @@ const state = {
     }),
   ],
   tab:'config',
-  aiSelectedRoster:0,
 };
 
 // ════════════════════════════════════════════════════════════
@@ -1705,13 +1653,6 @@ function renderResults(){
     .map((r,i)=>({r,i,result:r.enabled&&getPattern(r).length?analyzeRoster(r,state.wage):null}))
     .filter(x=>x.result);
 
-  // AI roster buttons
-  const ab=document.getElementById('ai-roster-btns');
-  ab.innerHTML=actives.map(({r,i})=>
-    `<button class="ai-sel-btn ${state.aiSelectedRoster===i?'selected':''}" onclick="selectAIRoster(${i})">${esc(r.name)||`Roster ${i+1}`}</button>`
-  ).join('');
-  if (!actives.find(x=>x.i===state.aiSelectedRoster)&&actives.length) state.aiSelectedRoster=actives[0].i;
-
   const panel=document.getElementById('results-panel');
   if (!actives.length){panel.innerHTML='<div class="empty-state">Enable at least one roster with shift blocks to see results.</div>';return;}
 
@@ -1999,225 +1940,6 @@ function cRow(label,value,barPct,barColor,currency){
     <div class="cost-row"><span class="crl">${label}</span><span class="crv">${fmtC(value,currency)}</span></div>
     <div class="bar-bg"><div class="bar-fill" style="width:${barPct}%;background:${barColor}"></div></div>
   </div>`;
-}
-
-// ════════════════════════════════════════════════════════════
-// AI ANALYSIS
-// ════════════════════════════════════════════════════════════
-const isLocal = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-
-function initAIPanel() {
-  const keyRow = document.getElementById('ai-key-row');
-  const sub = document.getElementById('ai-hdr-sub');
-  if (isLocal) {
-    if (keyRow) keyRow.style.display = 'block';
-    if (sub) sub.textContent = 'Running locally — enter your API key below to use AI analysis';
-  }
-}
-
-function selectAIRoster(i){state.aiSelectedRoster=i;renderResults();}
-
-async function runAI(){
-  const idx=state.aiSelectedRoster;
-  const roster=state.rosters[idx];
-  const result=analyzeRoster(roster,state.wage);
-  if (!result){alert('Selected roster has no valid pattern.');return;}
-  const out=document.getElementById('ai-output');
-  out.innerHTML='<span class="ai-loading">Analysing with Claude… 10–20 seconds…</span>';
-
-  // Build per-type shift details string
-  const typeStr=result.usedTypes.map(t=>{
-    const sd=result.typeDetails[t];
-    return `${SHIFT_LABELS[t]}: ${sd.start}–${sd.end} (${hrsLabel(sd.gross)} gross, ${hrsLabel(sd.paid)} paid, ${hrsLabel(sd.recovery)} recovery window, ${hrsLabel(sd.awayFromHome)} total away from home)`;
-  }).join('\n  ');
-
-  const prompt=`You are an expert in occupational health, shift work physiology, fatigue science, and mining operations safety.
-
-Analyse this shift roster for fatigue risk, health impacts, and efficiency. Provide a concise, specific, evidence-based analysis.
-
-ROSTER: ${roster.name||'Unnamed'}
-Pattern (${result.cycleLen}-day cycle): ${result.patStr}
-Crews: ${result.crews} | Employees per crew: ${result.empPerCrew} | Total: ${result.crews*result.empPerCrew}
-
-SHIFT DETAILS:
-  ${typeStr}
-  Unpaid break per shift: ${roster.unpaidBreakMin} min
-  Travel time (one-way): ${roster.travelTimeMin} min
-  Round-trip commute per shift day: ${hrsLabel(roster.travelTimeMin*2/60)}
-
-ANNUAL SUMMARY:
-  Days worked: ${result.daysOnYear} | Days off: ${result.daysOffYear}
-  Total paid hours: ${fmtN(result.totalPaidHoursYear)} hrs | Total on-site: ${fmtN(result.totalGrossHoursYear)} hrs
-  Annual commute: ${fmtN(result.totalCommuteHoursYear)} hrs (${(result.totalCommuteHoursYear/24).toFixed(1)} equivalent days)
-  Night shifts: ${result.nightsYear} (${Math.round(result.nightFrac*100)}% of working shifts)
-  Max consecutive days on: ${result.maxConsOn} | Max consecutive days off: ${result.maxConsOff}
-  Average away from home per shift day: ${hrsLabel(result.avgAwayFromHome)}
-  Minimum recovery window between shifts: ${hrsLabel(result.minRecovery)}
-  Weekend/rest-day shifts: ${result.weekendDaysYear} per year
-
-TRAINING & OPERATIONAL OPPORTUNITY:
-  Crew overlap / handover days per cycle: ${result.overlapDaysInCycle} (${result.overlapDaysYear}/yr) — suitable for joint briefings, competency sign-offs, housekeeping
-  Training & AL windows per cycle: ${result.trainingWindowsPerCycle} off-block windows of ≥2 consecutive days
-  Longest consecutive off block: ${result.maxOffRunLen} days
-  Total training-eligible off days per year: ${result.trainingDaysPerYear} days
-
-FATIGUE SCORE: ${result.fatigueScore}/13 — ${result.fatigueLabel}
-
-Provide analysis under these headings (keep total under 550 words):
-
-1. RECOVERY & CIRCADIAN IMPACT
-Assess the ${hrsLabel(result.minRecovery)} minimum recovery window against ILO's 11-hour guideline. How does the ${roster.travelTimeMin}-min commute compound this? Comment on the circadian disruption pattern from ${Math.round(result.nightFrac*100)}% night shifts.
-
-2. FATIGUE RISK — CONSECUTIVE DAYS
-Assess the impact of the ${result.maxConsOn}-day maximum consecutive working stretch. Reference the FAID (Fatigue Audit InterDyne) model or similar shift fatigue research for a 12-hour mining context.
-
-3. LONG-TERM HEALTH IMPACTS
-Specific risks relevant to this pattern: cardiovascular, metabolic syndrome, sleep disorder probability, musculoskeletal load from extended shifts. Cite studies where applicable.
-
-4. EFFICIENCY & ERROR WINDOWS
-When in this cycle are errors and incidents most likely? Consider shift-end alertness degradation, night shift cognitive impairment, and post-consecutive-days fatigue.
-
-5. SICKNESS ABSENCE PREDICTION
-Estimate annual sick days per person for this pattern vs the mining industry benchmark (~8–12 days/yr). Factor in night shift burden and consecutive days.
-
-6. RECOMMENDATIONS
-Three specific, practical changes to this roster pattern that would meaningfully improve fatigue outcomes without eliminating 24/7 coverage. Be concrete — suggest specific day counts or pattern changes.`;
-
-  try{
-    let text;
-    if (isLocal) {
-      // Local: call Anthropic directly with user-supplied key
-      const key = (document.getElementById('ai-key')||{}).value?.trim();
-      if (!key) {
-        out.innerHTML='<span style="color:var(--amber)">Running locally — enter your Anthropic API key in the field above to use AI analysis.</span>';
-        return;
-      }
-      const resp=await fetch('https://api.anthropic.com/v1/messages',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
-        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,messages:[{role:'user',content:prompt}]})
-      });
-      const data=await resp.json();
-      if (data.error) throw new Error(data.error.message);
-      text=data.content?.map(c=>c.text||'').join('\n')||'No response.';
-    } else {
-      // Hosted on Netlify: use the proxy function
-      const resp=await fetch('/.netlify/functions/claude',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({prompt})
-      });
-      const data=await resp.json();
-      if (!resp.ok) throw new Error(data.error||'Server error');
-      text=data.text||'No response.';
-    }
-    out.innerHTML=`<div style="font-family:var(--font-sans);font-size:12px;line-height:1.8;white-space:pre-wrap">${text}</div>`;
-  }catch(err){
-    out.innerHTML=`<span style="color:var(--red)">Error: ${esc(err.message)}</span>`;
-  }
-}
-
-async function callClaude(prompt) {
-  if (isLocal) {
-    const key = (document.getElementById('ai-key')||{}).value?.trim();
-    if (!key) throw new Error('Running locally — enter your API key in the field above.');
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1400,messages:[{role:'user',content:prompt}]})
-    });
-    const data = await resp.json();
-    if (data.error) throw new Error(data.error.message);
-    return data.content?.map(c=>c.text||'').join('\n')||'No response.';
-  } else {
-    const resp = await fetch('/.netlify/functions/claude',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({prompt})
-    });
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error||'Server error');
-    return data.text||'No response.';
-  }
-}
-
-async function runAICompare() {
-  const out = document.getElementById('ai-compare-output');
-  const actives = state.rosters
-    .map((r,i) => ({r, i, result: r.enabled && getPattern(r).length ? analyzeRoster(r, state.wage) : null}))
-    .filter(x => x.result);
-
-  if (actives.length < 1) {
-    out.innerHTML = '<span style="color:var(--amber)">Enable at least one roster to run a comparison.</span>';
-    return;
-  }
-
-  out.innerHTML = '<span class="ai-loading">Comparing rosters with Claude… 15–25 seconds…</span>';
-
-  const w = state.wage;
-  const cur = w.currency;
-
-  const rosterSummaries = actives.map(({r, i, result}) => {
-    const gb = result.gradeBreakdown;
-    const totalCost = gb ? gb.totalAllGrades : result.totalAll;
-    const staff = gb ? gb.totalHeadcount * result.crews : result.empPerCrew * result.crews;
-    const cov = result.coverage;
-    const covStatus = cov.ok ? 'Full 24/7 coverage' : cov.totalGaps.length ? `GAPS — no staff on ${cov.totalGaps.length} days of cycle` : `Partial gaps — day: ${cov.dayGaps.length} days, night: ${cov.nightGaps.length} days`;
-    return `
-ROSTER ${i+1}: ${r.name || 'Unnamed'}
-  Pattern: ${result.patStr} (${result.cycleLen}-day cycle)
-  Crews: ${result.crews} | Total staff: ${staff}
-  Shift: ${hrsLabel(result.avgGrossHrs)} gross / ${hrsLabel(result.avgPaidHrs)} paid per shift
-  Travel: ${roster_travelMin(r)} min each way | Min recovery: ${hrsLabel(result.minRecovery)}
-  Days worked/yr: ${result.daysOnYear} | Days off/yr: ${result.daysOffYear}
-  Night shifts/yr: ${result.nightsYear} (${Math.round(result.nightFrac*100)}%)
-  Max consecutive on: ${result.maxConsOn} | Max consecutive off: ${result.maxConsOff}
-  Weekend/rest day shifts/yr: ${result.weekendDaysYear}
-  Annual commute: ${fmtN(result.totalCommuteHoursYear)} hrs
-  Coverage: ${covStatus}
-  Fatigue score: ${result.fatigueScore}/13 — ${result.fatigueLabel}
-  Overlap/handover days per cycle: ${result.overlapDaysInCycle} (${result.overlapDaysYear}/yr)
-  Training & AL windows per cycle: ${result.trainingWindowsPerCycle} | Longest off block: ${result.maxOffRunLen} days
-  Total training-eligible days/yr: ${result.trainingDaysPerYear}
-  Total annual cost (all staff): ${fmtC(totalCost, cur)}
-  Cost per person/yr: ${fmtC(result.totalPerPerson, cur)}
-  ${result.takeHome ? `Employee take-home/month: ${fmtC(result.takeHome.takeHomeMonthly, cur)}` : ''}
-  ${gb ? `Grade breakdown: ${gb.rows.filter(row=>row.count>0).map(row=>`${row.grade.name} x${row.count} @ ${fmtC(row.grade.salary,cur)}/mo`).join(', ')}` : ''}`;
-  }).join('\n');
-
-  function roster_travelMin(r) { return r.travelTimeMin || 0; }
-
-  const prompt = `You are an expert in mining operations workforce planning, occupational health, fatigue science, and Indonesian labour law.
-
-Compare the following ${actives.length} shift roster option${actives.length>1?'s':''} for a gold processing plant (Toka Tindung, North Sulawesi, Indonesia). The operation runs 24/7 continuous processing.
-
-${rosterSummaries}
-
-CURRENCY: ${cur} | Work week standard: ${w.workWeekDays}-day | Night allowance multiplier: ${w.nightAllowMult}x
-
-Provide a structured comparison under these headings (keep total under 700 words, be specific and practical):
-
-1. FINANCIAL COMPARISON
-Compare total annual labour costs. Which roster is most cost-effective and why? Factor in overtime rates (PP 35/2021), BPJS, THR, and night allowances. Note any significant cost drivers.
-
-2. 24/7 COVERAGE ASSESSMENT
-Assess each roster's ability to maintain continuous plant coverage. Flag any gaps or risks. Which roster provides the most reliable coverage with the least risk of undermanning?
-
-3. FATIGUE & HEALTH COMPARISON
-Compare fatigue profiles: consecutive days, recovery windows, night shift burden, commute load. Which roster poses the greatest long-term health risk to workers? Reference shift work research where relevant.
-
-4. TRAINING, HOUSEKEEPING & LEAVE OPPORTUNITY
-Compare overlap/handover days and off-block structure. Which roster best supports: (a) crew overlap for joint briefings and competency sign-offs, (b) structured training windows, (c) annual leave scheduling without disrupting coverage? Note that overlap days and longer off blocks are a positive operational feature, not just a cost.
-
-5. OVERALL RECOMMENDATION
-Give a clear recommendation on which roster best balances cost, coverage, worker wellbeing, and operational opportunity (training/AL) for a gold processing context in Indonesia. If none is ideal, suggest the best starting point and what to modify.`;
-
-  try {
-    const text = await callClaude(prompt);
-    out.innerHTML = `<div style="font-family:var(--font-sans);font-size:12px;line-height:1.8;white-space:pre-wrap">${text}</div>`;
-  } catch(err) {
-    out.innerHTML = `<span style="color:var(--red)">Error: ${esc(err.message)}</span>`;
-  }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -3089,7 +2811,6 @@ const _savedOk = autoLoad();
 renderAll();
 renderBenchmarks();
 renderSalaryBands();
-initAIPanel();
 renderSlotBtns();
 if (_savedOk) showStatus('Session restored');
 </script>
